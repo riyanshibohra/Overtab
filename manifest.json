@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Overtab",
+  "version": "1.0.0",
+  "description": "Your intelligent Chrome companion powered by Gemini Nano. Highlight, hover, or speak to get instant explanations - all on-device.",
+  
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus",
+    "sidePanel"
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
+  

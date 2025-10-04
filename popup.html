@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overtab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Main popup container -->
+  <div class="popup-container">
+    
+    <!-- Header with logo/title -->
+    <div class="popup-header">
+      <h1 class="popup-title">Overtab</h1>
+      <p class="popup-subtitle">Your AI Companion</p>
+    </div>
+
+    <!-- Main action buttons -->
+    <div class="button-group">
+      
+      <!-- Button 1: Explain Page -->
+      <button id="explain-page-btn" class="action-button">
+        <span class="button-icon">📄</span>
+        <span class="button-text">Explain Page</span>
+      </button>
+
+      <!-- Button 2: Voice Command -->
+      <button id="voice-command-btn" class="action-button">
+        <span class="button-icon">🎤</span>
+        <span class="button-text">Voice Command</span>
+      </button>
+
+      <!-- Button 3: History -->
+      <button id="history-btn" class="action-button">
+        <span class="button-icon">📜</span>
+        <span class="button-text">History</span>
+      </button>
+
+    </div>
+
+    <!-- Bottom badge showing on-device status -->
+    <div class="status-badge">
+      <span class="status-indicator">🟢</span>
+      <span class="status-text">Powered by Gemini Nano (on-device)</span>
+    </div>
+
+  </div>
+
+  <!-- Load the JavaScript -->
+  <script src="popup.js"></script>
+</body>
+</html>

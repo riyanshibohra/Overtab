@@ -1,0 +1,142 @@
+/* ============================================
+   Overtab Styles - Phase 2: Popup Interface
+   ============================================ */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+/* ============================================
+   Popup Container
+   ============================================ */
+
+.popup-container {
+  width: 320px;
+  min-height: 280px;
+  background: #ffffff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================
+   Header Section
+   ============================================ */
+
+.popup-header {
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.popup-title {
+  font-size: 24px;
+  font-weight: 500;
+  color: #1a73e8; /* Google Blue */
+  margin: 0;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.popup-subtitle {
+  font-size: 13px;
+  color: #5f6368;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ============================================
+   Button Group
+   ============================================ */
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+/* ============================================
+   Action Buttons (Main buttons)
+   ============================================ */
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  color: #202124;
+  font-family: inherit;
+  font-weight: 500;
+  text-align: left;
+}
+
+.action-button:hover {
+  background: #f8f9fa;
+  border-color: #1a73e8;
+  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.2);
+  transform: translateY(-1px);
+}
+
+.action-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(26, 115, 232, 0.1);
+}
+
+.button-icon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.button-text {
+  flex: 1;
+  user-select: none;
+}
+
+/* ============================================
+   Status Badge (Bottom indicator)
+   ============================================ */
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #f0f7ff;
+  border-radius: 6px;
+  border: 1px solid #d2e3fc;
+  margin-top: auto;
+}
+
+.status-indicator {
+  font-size: 12px;
+}
+
+.status-text {
+  font-size: 11px;
+  color: #1967d2;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
