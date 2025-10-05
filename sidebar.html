@@ -3,14 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overtab - Sidebar</title>
+  <title>Overtab - Results</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div id="sidebar-container">
-    <h1>Overtab Sidebar</h1>
-    <p>Results will appear here...</p>
+<body class="sidebar-body">
+  
+  <!-- Main Sidebar Container -->
+  <div class="sidebar-container">
+    
+    <!-- Header -->
+    <div class="sidebar-header">
+      <div class="sidebar-branding">
+        <h1 class="sidebar-title">Overtab</h1>
+        <p class="sidebar-subtitle">AI Results</p>
+      </div>
+      <button id="clear-btn" class="sidebar-clear-btn" title="Clear current result">
+        ✕
+      </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-tab="result">
+        📄 Result
+      </button>
+      <button class="sidebar-tab" data-tab="history">
+        📜 History
+      </button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="sidebar-content">
+      
+      <!-- Result Tab (default view) -->
+      <div id="result-tab" class="sidebar-tab-content active">
+        
+        <!-- Empty State (shown when no results) -->
+        <div id="empty-state" class="sidebar-empty-state">
+          <div class="empty-icon">💡</div>
+          <h2>No results yet</h2>
+          <p>Highlight text or right-click an image to see AI-powered explanations here.</p>
+        </div>
+
+        <!-- Loading State (shown when processing) -->
+        <div id="loading-state" class="sidebar-loading-state hidden">
+          <div class="loading-spinner"></div>
+          <p>Processing with Gemini Nano...</p>
+        </div>
+
+        <!-- Result Display (shown when we have results) -->
+        <div id="result-display" class="sidebar-result-display hidden">
+          
+          <!-- Source Info -->
+          <div class="result-source">
+            <span class="result-source-label">Source:</span>
+            <span id="result-source-text" class="result-source-text">Selected text will appear here</span>
+          </div>
+
+          <!-- Result Sections -->
+          <div class="result-sections">
+            
+            <!-- Explanation Section -->
+            <div class="result-section" id="explanation-section">
+              <div class="result-section-header">
+                <span class="result-icon">💡</span>
+                <h3>Explanation</h3>
+              </div>
+              <div class="result-section-content" id="explanation-content">
+                Result will appear here...
+              </div>
+            </div>
+
+            <!-- Simplified Section -->
+            <div class="result-section hidden" id="simplified-section">
+              <div class="result-section-header">
+                <span class="result-icon">✨</span>
+                <h3>Simplified</h3>
+              </div>
+              <div class="result-section-content" id="simplified-content">
+                Result will appear here...
+              </div>
+            </div>
+
+            <!-- Translation Section -->
+            <div class="result-section hidden" id="translation-section">
+              <div class="result-section-header">
+                <span class="result-icon">🌐</span>
+                <h3>Translation</h3>
+              </div>
+              <div class="result-section-content" id="translation-content">
+                Result will appear here...
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- History Tab -->
+      <div id="history-tab" class="sidebar-tab-content">
+        
+        <!-- Empty History State -->
+        <div id="history-empty-state" class="sidebar-empty-state">
+          <div class="empty-icon">📜</div>
+          <h2>No history yet</h2>
+          <p>Your recent explanations will appear here.</p>
+        </div>
+
+        <!-- History List (shown when we have history) -->
+        <div id="history-list" class="sidebar-history-list hidden">
+          <!-- History items will be dynamically added here -->
+        </div>
+
+        <!-- Clear History Button -->
+        <button id="clear-history-btn" class="sidebar-clear-history-btn hidden">
+          Clear All History
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- Footer Badge -->
+    <div class="sidebar-footer">
+      <div class="sidebar-badge">
+        <span class="status-indicator">🟢</span>
+        <span class="status-text">Powered by Gemini Nano (on-device)</span>
+      </div>
+    </div>
+
   </div>
+
   <script src="sidebar.js"></script>
 </body>
 </html>
