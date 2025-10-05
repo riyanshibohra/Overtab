@@ -140,3 +140,57 @@ body {
   font-weight: 500;
   letter-spacing: 0.2px;
 }
+
+/* ============================================
+   Phase 4: Tooltip for text selection
+   ============================================ */
+
+.overtab-tooltip {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 999999;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+}
+
+.overtab-tooltip-btn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #202124;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.overtab-tooltip-btn:hover {
+  background: #f8f9fa;
+  border-color: #1a73e8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(26, 115, 232, 0.2);
+}
+
+.overtab-tooltip-btn:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   Phase 5: Image hover effect
+   ============================================ */
+
+.overtab-image-hover {
+  outline: 3px solid #1a73e8 !important;
+  outline-offset: 2px;
+  cursor: pointer !important;
+  box-shadow: 0 0 10px rgba(26, 115, 232, 0.3) !important;
+  transition: all 0.2s ease;
+}

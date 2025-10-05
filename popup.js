@@ -36,8 +36,11 @@ document.addEventListener('DOMContentLoaded', function() {
   historyBtn.addEventListener('click', function() {
     console.log('History button clicked');
     
-    // For now, just show a message (we'll add real functionality in Phase 9)
-    alert('📜 History feature coming soon!\n\nThis will open the sidebar showing your recent explanations.');
+    // Send message to background script to open the sidebar
+    chrome.runtime.sendMessage({ action: 'openSidebar' });
+    
+    // Close the popup
+    window.close();
   });
 
   // Log that the popup has loaded successfully
