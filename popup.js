@@ -9,6 +9,42 @@ document.addEventListener('DOMContentLoaded', function() {
   const explainPageBtn = document.getElementById('explain-page-btn');
   const voiceCommandBtn = document.getElementById('voice-command-btn');
   const historyBtn = document.getElementById('history-btn');
+  const tooltipToggle = document.getElementById('tooltip-toggle');
+
+  // ============================================
+  // Load saved tooltip state WITHOUT flicker
+  // ============================================
+  chrome.storage.local.get(['tooltipEnabled'], (result) => {
+    const isEnabled = result.tooltipEnabled !== false; // Default to true
+    
+    // Only change if different from default (checked=true in HTML)
+    if (!isEnabled) {
+      tooltipToggle.checked = false;
+    }
+    
+    // Show the toggle now that state is set (prevents flicker)
+    document.querySelector('.feature-toggle').classList.add('loaded');
+  });
+
+  // ============================================
+  // Handle Tooltip Toggle
+  // ============================================
+  tooltipToggle.addEventListener('change', function() {
+    const isEnabled = this.checked;
+    
+    // Save state
+    chrome.storage.local.set({ tooltipEnabled: isEnabled });
+    
+    // Send message to all tabs to update state
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'toggleTooltip',
+          enabled: isEnabled
+        }).catch(() => {}); // Ignore errors for tabs without content script
+      });
+    });
+  });
 
   // ============================================
   // Button 1: Explain Page

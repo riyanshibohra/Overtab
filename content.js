@@ -10,6 +10,12 @@ console.log('Overtab content script loaded on:', window.location.href);
 let tooltip = null;  // Will hold our tooltip element
 let currentSelectedText = '';  // Store the current selection
 let isProcessing = false;  // Prevent multiple simultaneous requests
+let tooltipEnabled = true; // Default enabled
+
+// Load tooltip state from storage
+chrome.storage.local.get(['tooltipEnabled'], (result) => {
+  tooltipEnabled = result.tooltipEnabled !== false; // Default to true
+});
 
 // ============================================
 // Phase 4: Detect when user highlights text
@@ -18,6 +24,11 @@ let isProcessing = false;  // Prevent multiple simultaneous requests
 document.addEventListener('mouseup', function(event) {
   // Small delay to ensure selection is complete
   setTimeout(() => {
+    // Check if tooltip is enabled
+    if (!tooltipEnabled) {
+      return; // Don't show tooltip if disabled
+    }
+    
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
     
@@ -253,6 +264,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Handle "Describe Image" from context menu
   if (message.action === 'describeImage') {
     handleDescribeImage(message.imageUrl);
+  }
+  
+  // Handle "Toggle Tooltip" from popup
+  if (message.action === 'toggleTooltip') {
+    tooltipEnabled = message.enabled;
+    console.log('Tooltip', tooltipEnabled ? 'enabled' : 'disabled');
+    
+    // Remove tooltip if disabling
+    if (!tooltipEnabled) {
+      removeTooltip();
+    }
   }
   
   // No need to return true since we're not sending a response

@@ -1,0 +1,72 @@
+/* ============================================
+   Tooltip Toggle Switch Styles
+   ============================================ */
+
+.feature-toggle {
+  padding: 14px 20px;
+  border-top: 1px solid #e8eaed;
+  border-bottom: 1px solid #e8eaed;
+  visibility: hidden;
+}
+
+.feature-toggle.loaded {
+  visibility: visible;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-container input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: #dadce0;
+  border-radius: 11px;
+  transition: background 0.2s ease;
+  margin-right: 10px;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-container input[type="checkbox"]:checked + .toggle-slider {
+  background: #4285f4;
+}
+
+.toggle-container input[type="checkbox"]:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+.toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #202124;
+  flex: 1;
+}
+
+.toggle-hint {
+  display: block;
+  font-size: 11px;
+  color: #5f6368;
+  margin-top: 6px;
+  margin-left: 50px;
+}
+
