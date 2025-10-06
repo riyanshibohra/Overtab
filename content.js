@@ -26,8 +26,12 @@ document.addEventListener('mouseup', function(event) {
       console.log('User selected text:', selectedText);
       currentSelectedText = selectedText;
       
-      // Show tooltip near the mouse
-      showTooltip(event.clientX, event.clientY);
+      // Get the position of the selected text (not mouse!)
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        showTooltip(rect);
+      }
     } else {
       // Remove tooltip if no text selected
       removeTooltip();
@@ -57,38 +61,47 @@ document.addEventListener('keydown', function(event) {
 // Create and show the tooltip
 // ============================================
 
-function showTooltip(x, y) {
-  // Remove old tooltip first
-  removeTooltip();
+function showTooltip(selectionRect) {
+  // Don't recreate if already exists
+  if (tooltip) return;
   
   // Create tooltip element
   tooltip = document.createElement('div');
   tooltip.className = 'overtab-tooltip';
   
-  // Create the three action buttons
+  // Create the three action buttons with modern design
   tooltip.innerHTML = `
     <button class="overtab-tooltip-btn" data-action="explain">
-      💡 Explain
+      <span class="tooltip-btn-icon">💡</span>
+      <span class="tooltip-btn-text">Explain</span>
     </button>
     <button class="overtab-tooltip-btn" data-action="simplify">
-      ✨ Simplify
+      <span class="tooltip-btn-icon">✨</span>
+      <span class="tooltip-btn-text">Simplify</span>
     </button>
     <button class="overtab-tooltip-btn" data-action="translate">
-      🌐 Translate
+      <span class="tooltip-btn-icon">🌐</span>
+      <span class="tooltip-btn-text">Translate</span>
     </button>
   `;
   
   // Add to page
   document.body.appendChild(tooltip);
   
-  // Position it
-  const rect = tooltip.getBoundingClientRect();
-  let left = x - (rect.width / 2);
-  let top = y - rect.height - 15;
+  // Position it relative to the SELECTED TEXT (not mouse!)
+  const tooltipRect = tooltip.getBoundingClientRect();
   
-  // Keep in viewport
-  left = Math.max(10, Math.min(left, window.innerWidth - rect.width - 10));
-  top = Math.max(10, top);
+  // Center horizontally above the selection
+  let left = selectionRect.left + (selectionRect.width / 2) - (tooltipRect.width / 2);
+  let top = selectionRect.top - tooltipRect.height - 10;
+  
+  // Keep in viewport horizontally
+  left = Math.max(10, Math.min(left, window.innerWidth - tooltipRect.width - 10));
+  
+  // If not enough space above, show below
+  if (top < 10) {
+    top = selectionRect.bottom + 10;
+  }
   
   tooltip.style.position = 'fixed';
   tooltip.style.left = left + 'px';

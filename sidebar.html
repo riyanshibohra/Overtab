@@ -14,21 +14,28 @@
     <!-- Header -->
     <div class="sidebar-header">
       <div class="sidebar-branding">
-        <h1 class="sidebar-title">Overtab</h1>
-        <p class="sidebar-subtitle">AI Results</p>
+        <img src="icons/icon-48.png" alt="Overtab" class="sidebar-logo" />
+        <div class="sidebar-title-group">
+          <h1 class="sidebar-title">Overtab</h1>
+          <p class="sidebar-subtitle">AI Results</p>
+        </div>
       </div>
-      <button id="clear-btn" class="sidebar-clear-btn" title="Clear current result">
-        ✕
+      <button id="clear-btn" class="sidebar-clear-btn" title="Close sidebar">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </button>
     </div>
 
     <!-- Tab Navigation -->
     <div class="sidebar-tabs">
       <button class="sidebar-tab active" data-tab="result">
-        📄 Result
+        <span class="tab-icon">📄</span>
+        <span class="tab-label">Result</span>
       </button>
       <button class="sidebar-tab" data-tab="history">
-        📜 History
+        <span class="tab-icon">📜</span>
+        <span class="tab-label">History</span>
       </button>
     </div>
 
@@ -138,8 +145,11 @@
     <!-- Footer Badge -->
     <div class="sidebar-footer">
       <div class="sidebar-badge">
-        <span class="status-indicator">🟢</span>
-        <span class="status-text">Powered by Gemini Nano (on-device)</span>
+        <div class="status-indicator">
+          <img src="icons/gemini-icon.svg" alt="Gemini" />
+        </div>
+        <span class="status-text">Powered by Gemini Nano</span>
+        <span class="status-badge-label">ON-DEVICE</span>
       </div>
     </div>
 

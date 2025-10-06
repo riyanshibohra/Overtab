@@ -31,12 +31,13 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // ============================================
-  // Clear Button (in header)
+  // Close Button (X in header)
   // ============================================
   
   const clearBtn = document.getElementById('clear-btn');
   clearBtn.addEventListener('click', function() {
-    clearCurrentResult();
+    // Close the sidebar
+    window.close();
   });
   
   // ============================================
