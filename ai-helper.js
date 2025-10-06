@@ -107,9 +107,8 @@ async function simplifyText(text) {
     console.log('Using demo mode for simplification');
     await simulateDelay();
     
-    const words = text.split(' ');
-    const simplified = words.slice(0, Math.min(words.length, 30)).join(' ');
-    return `✨ DEMO MODE - Simplified version:\n\n${simplified}...\n\nIn simpler terms: This is a demonstration showing how the Rewriter API would simplify complex text into easier-to-understand language using casual tone and shorter sentences.\n\n✨ Real AI simplification will be used when Chrome Built-in AI APIs become available.`;
+    const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    return `✨ DEMO MODE - Simplified (Explained like you're 10):\n\n"${preview}"\n\nIn simple words:\nImagine this is like explaining something to a 10-year-old! The AI would break down complex ideas into easy-to-understand language, using simple words and familiar examples.\n\n📚 Key idea: Takes hard-to-understand text and makes it super clear and simple!\n\n✨ Real AI will provide actual simplified explanations when Chrome Built-in AI APIs become available.`;
     
   } catch (error) {
     console.error('Simplify error:', error);
