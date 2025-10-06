@@ -16,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
   explainPageBtn.addEventListener('click', async function() {
     console.log('Explain Page button clicked');
     
-    // Close popup
-    window.close();
-    
     try {
       // Get the current page content
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -41,6 +38,9 @@ document.addEventListener('DOMContentLoaded', function() {
         action: 'explainPage',
         text: pageText
       });
+      
+      // Close popup AFTER success
+      window.close();
       
     } catch (error) {
       console.error('Error explaining page:', error);

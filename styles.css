@@ -21,39 +21,75 @@ body {
    ============================================ */
 
 .popup-container {
-  width: 320px;
-  min-height: 280px;
+  width: 360px;
+  min-height: 320px;
   background: #ffffff;
-  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  overflow: hidden;
 }
 
 /* ============================================
-   Header Section
+   Header Section - Modern Gradient
    ============================================ */
 
 .popup-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px 20px;
   text-align: center;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e8eaed;
+  position: relative;
+  overflow: hidden;
+}
+
+.popup-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+.popup-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  animation: float 3s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
 }
 
 .popup-title {
-  font-size: 24px;
-  font-weight: 500;
-  color: #1a73e8; /* Google Blue */
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
   margin: 0;
   margin-bottom: 4px;
   letter-spacing: -0.5px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .popup-subtitle {
   font-size: 13px;
-  color: #5f6368;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
   font-weight: 400;
+  position: relative;
+  z-index: 1;
 }
 
 /* ============================================
@@ -63,82 +99,146 @@ body {
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  padding: 20px;
   flex: 1;
 }
 
 /* ============================================
-   Action Buttons (Main buttons)
+   Action Buttons - Modern Design
    ============================================ */
 
 .action-button {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px;
   background: #ffffff;
-  border: 1px solid #dadce0;
-  border-radius: 8px;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 15px;
-  color: #202124;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
-  font-weight: 500;
   text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .action-button:hover {
-  background: #f8f9fa;
-  border-color: #1a73e8;
-  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.2);
-  transform: translateY(-1px);
+  border-color: #667eea;
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.action-button:hover::before {
+  opacity: 0.05;
 }
 
 .action-button:active {
   transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(26, 115, 232, 0.1);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
 }
 
-.button-icon {
-  font-size: 20px;
+.button-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.button-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+
+.button-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .button-text {
-  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #202124;
+  user-select: none;
+}
+
+.button-description {
+  font-size: 12px;
+  color: #5f6368;
+  font-weight: 400;
   user-select: none;
 }
 
 /* ============================================
-   Status Badge (Bottom indicator)
+   Status Badge - Sleek Design
    ============================================ */
 
 .status-badge {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 12px;
-  background: #f0f7ff;
-  border-radius: 6px;
-  border: 1px solid #d2e3fc;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-top: 1px solid #e8eaed;
   margin-top: auto;
 }
 
+.status-badge-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .status-indicator {
-  font-size: 12px;
+  font-size: 8px;
+  color: #34a853;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .status-text {
   font-size: 11px;
-  color: #1967d2;
+  color: #5f6368;
   font-weight: 500;
-  letter-spacing: 0.2px;
+}
+
+.status-badge-label {
+  font-size: 10px;
+  color: #34a853;
+  background: rgba(52, 168, 83, 0.1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ============================================
@@ -156,6 +256,18 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 999999;
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  animation: tooltipSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes tooltipSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .overtab-tooltip-btn {
@@ -335,6 +447,29 @@ body {
   margin: 0;
 }
 
+.empty-state-tips {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e8eaed;
+  text-align: left;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.empty-state-tips p {
+  font-size: 13px;
+  color: #5f6368;
+  margin: 4px 0;
+}
+
+.empty-state-tips strong {
+  color: #202124;
+  font-size: 14px;
+}
+
 /* Loading State */
 .sidebar-loading-state {
   text-align: center;
@@ -346,8 +481,9 @@ body {
   height: 40px;
   border: 4px solid #e8eaed;
   border-top-color: #1a73e8;
+  border-right-color: #1a73e8;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   margin: 0 auto 16px;
 }
 
@@ -426,6 +562,24 @@ body {
   font-weight: 500;
   color: #202124;
   margin: 0;
+  flex: 1;
+}
+
+/* Phase 11: Copy button */
+.copy-btn {
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.copy-btn:hover {
+  background: #f8f9fa;
+  border-color: #1a73e8;
 }
 
 .result-section-content {
@@ -442,6 +596,53 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.history-item {
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history-item:hover {
+  background: #f8f9fa;
+  border-color: #1a73e8;
+  box-shadow: 0 2px 4px rgba(26, 115, 232, 0.1);
+}
+
+.history-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.history-item-icon {
+  font-size: 16px;
+}
+
+.history-item-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a73e8;
+  flex: 1;
+}
+
+.history-item-time {
+  font-size: 11px;
+  color: #5f6368;
+}
+
+.history-item-source {
+  font-size: 13px;
+  color: #5f6368;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-clear-history-btn {
@@ -485,4 +686,30 @@ body {
 /* Utility */
 .hidden {
   display: none !important;
+}
+
+/* ============================================
+   Phase 11: Polish - Toast Notifications
+   ============================================ */
+
+.overtab-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #202124;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overtab-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

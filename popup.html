@@ -10,10 +10,11 @@
   <!-- Main popup container -->
   <div class="popup-container">
     
-    <!-- Header with logo/title -->
+    <!-- Header with gradient background -->
     <div class="popup-header">
+      <div class="popup-icon">✨</div>
       <h1 class="popup-title">Overtab</h1>
-      <p class="popup-subtitle">Your AI Companion</p>
+      <p class="popup-subtitle">AI-Powered Intelligence</p>
     </div>
 
     <!-- Main action buttons -->
@@ -21,28 +22,46 @@
       
       <!-- Button 1: Explain Page -->
       <button id="explain-page-btn" class="action-button">
-        <span class="button-icon">📄</span>
-        <span class="button-text">Explain Page</span>
+        <div class="button-icon-wrapper">
+          <span class="button-icon">📄</span>
+        </div>
+        <div class="button-content">
+          <span class="button-text">Explain Page</span>
+          <span class="button-description">Summarize current page</span>
+        </div>
       </button>
 
       <!-- Button 2: Voice Command -->
       <button id="voice-command-btn" class="action-button">
-        <span class="button-icon">🎤</span>
-        <span class="button-text">Voice Command</span>
+        <div class="button-icon-wrapper">
+          <span class="button-icon">🎤</span>
+        </div>
+        <div class="button-content">
+          <span class="button-text">Voice Command</span>
+          <span class="button-description">Ask anything via voice</span>
+        </div>
       </button>
 
       <!-- Button 3: History -->
       <button id="history-btn" class="action-button">
-        <span class="button-icon">📜</span>
-        <span class="button-text">History</span>
+        <div class="button-icon-wrapper">
+          <span class="button-icon">📜</span>
+        </div>
+        <div class="button-content">
+          <span class="button-text">History</span>
+          <span class="button-description">View past results</span>
+        </div>
       </button>
 
     </div>
 
-    <!-- Bottom badge showing on-device status -->
+    <!-- Bottom badge with better styling -->
     <div class="status-badge">
-      <span class="status-indicator">🟢</span>
-      <span class="status-text">Powered by Gemini Nano (on-device)</span>
+      <div class="status-badge-content">
+        <span class="status-indicator">●</span>
+        <span class="status-text">Powered by Gemini Nano</span>
+      </div>
+      <span class="status-badge-label">On-Device AI</span>
     </div>
 
   </div>

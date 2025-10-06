@@ -43,6 +43,13 @@
           <div class="empty-icon">💡</div>
           <h2>No results yet</h2>
           <p>Highlight text or right-click an image to see AI-powered explanations here.</p>
+          <div class="empty-state-tips">
+            <p><strong>Quick tips:</strong></p>
+            <p>• Highlight text → Click Explain/Simplify/Translate</p>
+            <p>• Right-click images → Describe with Overtab</p>
+            <p>• Use Voice Command for questions</p>
+            <p>• Press ESC to close tooltip</p>
+          </div>
         </div>
 
         <!-- Loading State (shown when processing) -->
@@ -68,6 +75,7 @@
               <div class="result-section-header">
                 <span class="result-icon">💡</span>
                 <h3>Explanation</h3>
+                <button class="copy-btn" data-content="explanation" title="Copy to clipboard">📋</button>
               </div>
               <div class="result-section-content" id="explanation-content">
                 Result will appear here...
@@ -79,6 +87,7 @@
               <div class="result-section-header">
                 <span class="result-icon">✨</span>
                 <h3>Simplified</h3>
+                <button class="copy-btn" data-content="simplified" title="Copy to clipboard">📋</button>
               </div>
               <div class="result-section-content" id="simplified-content">
                 Result will appear here...
@@ -90,6 +99,7 @@
               <div class="result-section-header">
                 <span class="result-icon">🌐</span>
                 <h3>Translation</h3>
+                <button class="copy-btn" data-content="translation" title="Copy to clipboard">📋</button>
               </div>
               <div class="result-section-content" id="translation-content">
                 Result will appear here...
@@ -135,6 +145,7 @@
 
   </div>
 
+  <script src="storage-manager.js"></script>
   <script src="sidebar.js"></script>
 </body>
 </html>

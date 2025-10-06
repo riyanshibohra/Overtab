@@ -9,6 +9,7 @@ console.log('Overtab content script loaded on:', window.location.href);
 
 let tooltip = null;  // Will hold our tooltip element
 let currentSelectedText = '';  // Store the current selection
+let isProcessing = false;  // Prevent multiple simultaneous requests
 
 // ============================================
 // Phase 4: Detect when user highlights text
@@ -38,6 +39,16 @@ document.addEventListener('mouseup', function(event) {
 document.addEventListener('mousedown', function(event) {
   // If clicking outside the tooltip, remove it
   if (tooltip && !tooltip.contains(event.target)) {
+    removeTooltip();
+  }
+});
+
+// ============================================
+// Phase 11: Close tooltip with ESC key
+// ============================================
+
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' && tooltip) {
     removeTooltip();
   }
 });
@@ -108,6 +119,13 @@ function removeTooltip() {
 // ============================================
 
 async function handleAction(action) {
+  // Prevent multiple simultaneous requests
+  if (isProcessing) {
+    console.log('Already processing a request, please wait...');
+    return;
+  }
+  
+  isProcessing = true;
   const text = currentSelectedText;
   
   // Remove tooltip
@@ -163,6 +181,11 @@ async function handleAction(action) {
       action: 'showError',
       error: error.message || 'AI API not available. Make sure you have Chrome Canary with AI features enabled.'
     });
+  } finally {
+    // Reset processing flag after a short delay
+    setTimeout(() => {
+      isProcessing = false;
+    }, 500);
   }
 }
 
