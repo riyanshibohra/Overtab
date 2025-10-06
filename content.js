@@ -304,6 +304,10 @@ function startVoiceCapture() {
     return;
   }
   
+  // Get page context (title and some text for context)
+  const pageTitle = document.title;
+  const pageText = document.body.innerText.substring(0, 1000); // First 1000 chars for context
+  
   // Create recognition object
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
@@ -317,13 +321,16 @@ function startVoiceCapture() {
   indicator.id = 'overtab-voice-indicator';
   indicator.innerHTML = `
     <div style="position: fixed; top: 20px; right: 20px; z-index: 9999999; 
-                background: white; padding: 16px 24px; border-radius: 12px; 
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 2px solid #1a73e8;">
-      <div style="font-size: 16px; font-weight: 600; color: #1a73e8; margin-bottom: 8px;">
+                background: white; padding: 20px 28px; border-radius: 12px; 
+                box-shadow: 0 4px 16px rgba(0,0,0,0.15); border: 2px solid #1a73e8;">
+      <div style="font-size: 18px; font-weight: 600; color: #1a73e8; margin-bottom: 8px;">
         🎤 Listening...
       </div>
-      <div style="font-size: 13px; color: #5f6368;">
-        Speak your question
+      <div style="font-size: 14px; color: #5f6368; margin-bottom: 4px;">
+        Ask a question about this page
+      </div>
+      <div style="font-size: 12px; color: #80868b; font-style: italic;">
+        "${pageTitle.substring(0, 40)}${pageTitle.length > 40 ? '...' : ''}"
       </div>
     </div>
   `;
@@ -332,36 +339,49 @@ function startVoiceCapture() {
   // Handle result
   recognition.onresult = async function(event) {
     const transcript = event.results[0][0].transcript;
-    console.log('Voice input:', transcript);
+    console.log('Voice question:', transcript);
     
     // Remove indicator
     if (indicator && indicator.parentNode) {
       indicator.parentNode.removeChild(indicator);
     }
     
-    // Open sidebar and show loading
-    chrome.runtime.sendMessage({ action: 'openSidebar' });
+    // Sidebar is already open from the button click!
+    // Just show loading state
+    console.log('Showing loading in sidebar...');
     
     chrome.runtime.sendMessage({
       action: 'showLoading',
-      sourceText: `Voice: "${transcript}"`
+      sourceText: `Q: "${transcript}"`
     });
     
     try {
-      const result = await promptAI(`Answer this question: ${transcript}`);
+      // Create context-aware prompt
+      const contextPrompt = `Page: "${pageTitle}"
       
+Context: ${pageText}
+
+Question: ${transcript}
+
+Answer the question based on the page content above.`;
+      
+      const result = await promptAI(contextPrompt);
+      
+      // Send result to sidebar
       chrome.runtime.sendMessage({
         action: 'showResult',
-        sourceText: `Voice: "${transcript}"`,
+        sourceText: `Q: "${transcript}"`,
         resultType: 'explanation',
         result: result
       });
       
+      console.log('Voice Q&A completed');
+      
     } catch (error) {
-      console.error('Error processing voice command:', error);
+      console.error('Error processing voice question:', error);
       chrome.runtime.sendMessage({
         action: 'showError',
-        error: error.message || 'Error processing voice command'
+        error: error.message || 'Error processing voice question. Try again!'
       });
     }
   };

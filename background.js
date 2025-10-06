@@ -55,26 +55,66 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // ============================================
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Background received message:', message);
+  console.log('🔔 Background received message:', message);
+  console.log('📤 Sender:', sender);
   
   // If someone wants to open the sidebar
   if (message.action === 'openSidebar') {
-    // Get the current tab and open the sidebar
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.sidePanel.open({ tabId: tabs[0].id });
-      }
-    });
+    console.log('🚀 Opening sidebar...');
+    
+    // Use the sender's tab ID if available (from content script)
+    if (sender.tab && sender.tab.id) {
+      console.log('📱 Opening sidebar for tab:', sender.tab.id);
+      chrome.sidePanel.open({ tabId: sender.tab.id })
+        .then(() => {
+          console.log('✅ Sidebar opened successfully!');
+          sendResponse({ success: true });
+          
+          // If loading should be shown, send it after a delay
+          if (message.showLoading) {
+            setTimeout(() => {
+              chrome.runtime.sendMessage({
+                action: 'showLoading',
+                sourceText: message.sourceText
+              });
+            }, 300);
+          }
+        })
+        .catch(err => {
+          console.error('❌ Error opening sidebar:', err);
+          sendResponse({ success: false, error: err.message });
+        });
+      return true; // Keep message channel open for async response
+    } else {
+      // Fallback: Get the current active tab
+      console.log('🔍 No sender tab, using active tab...');
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          console.log('📱 Opening sidebar for active tab:', tabs[0].id);
+          chrome.sidePanel.open({ tabId: tabs[0].id })
+            .then(() => {
+              console.log('✅ Sidebar opened successfully!');
+              sendResponse({ success: true });
+            })
+            .catch(err => {
+              console.error('❌ Error opening sidebar:', err);
+              sendResponse({ success: false, error: err.message });
+            });
+        } else {
+          console.error('❌ No active tab found');
+          sendResponse({ success: false, error: 'No active tab' });
+        }
+      });
+      return true; // Keep message channel open for async response
+    }
   }
   
   // Forward AI result messages to sidebar
   if (message.action === 'showLoading' || 
       message.action === 'showResult' || 
       message.action === 'showError') {
+    console.log('📨 Forwarding message to sidebar:', message.action);
     // Send message to sidebar
-    // Note: Sidebar will be listening for these messages
     chrome.runtime.sendMessage(message);
   }
-  
-  // No need to return true since we're not sending a response
 });

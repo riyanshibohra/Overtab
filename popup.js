@@ -54,14 +54,21 @@ document.addEventListener('DOMContentLoaded', function() {
   voiceCommandBtn.addEventListener('click', async function() {
     console.log('Voice Command button clicked');
     
-    // Close popup
-    window.close();
-    
     try {
       // Get the current tab
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
-      // Send message to content script to start voice capture
+      // MUST open sidebar HERE (during user gesture) - Chrome requirement!
+      await chrome.sidePanel.open({ tabId: tab.id });
+      console.log('✅ Sidebar opened from user click');
+      
+      // Small delay for sidebar to render
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Close popup
+      window.close();
+      
+      // NOW start voice capture (sidebar already open)
       await chrome.tabs.sendMessage(tab.id, {
         action: 'startVoiceCapture'
       });
