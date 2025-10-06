@@ -13,7 +13,7 @@
   ],
   
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -22,19 +22,19 @@
   },
   
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/background.js"
   },
   
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["ai-helper.js", "content.js"],
-      "css": ["content-styles.css"]
+      "js": ["src/utils/ai-helper.js", "src/content/content.js"],
+      "css": ["src/content/content-styles.css"]
     }
   ],
   
   "side_panel": {
-    "default_path": "sidebar.html"
+    "default_path": "src/sidebar/sidebar.html"
   },
   
   "icons": {
