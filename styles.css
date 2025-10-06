@@ -36,16 +36,16 @@ body {
 
 .popup-header {
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-  padding: 24px 20px 20px;
+  padding: 28px 20px 24px;
   text-align: center;
   position: relative;
   border-bottom: 1px solid #e8eaed;
 }
 
 .popup-icon {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 10px;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
   filter: drop-shadow(0 2px 8px rgba(66, 133, 244, 0.15));
   display: inline-block;
   object-fit: contain;
@@ -351,8 +351,8 @@ body {
 }
 
 .sidebar-logo {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(66, 133, 244, 0.1));
 }

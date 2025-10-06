@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Overtab",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Your intelligent Chrome companion powered by Gemini Nano. Highlight, hover, or speak to get instant explanations - all on-device.",
   
   "permissions": [
