@@ -13,21 +13,63 @@ document.addEventListener('DOMContentLoaded', function() {
   // ============================================
   // Button 1: Explain Page
   // ============================================
-  explainPageBtn.addEventListener('click', function() {
+  explainPageBtn.addEventListener('click', async function() {
     console.log('Explain Page button clicked');
     
-    // For now, just show a message (we'll add real functionality in Phase 7)
-    alert('📄 Explain Page feature coming soon!\n\nThis will use the Summarizer API to explain the current page.');
+    // Close popup
+    window.close();
+    
+    try {
+      // Get the current page content
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // Inject script to get page text
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          // Get main text content from the page
+          const bodyText = document.body.innerText;
+          // Limit to first 5000 characters to avoid API limits
+          return bodyText.substring(0, 5000);
+        }
+      });
+      
+      const pageText = results[0].result;
+      
+      // Send to content script to process
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'explainPage',
+        text: pageText
+      });
+      
+    } catch (error) {
+      console.error('Error explaining page:', error);
+      alert('Error: ' + error.message);
+    }
   });
 
   // ============================================
   // Button 2: Voice Command
   // ============================================
-  voiceCommandBtn.addEventListener('click', function() {
+  voiceCommandBtn.addEventListener('click', async function() {
     console.log('Voice Command button clicked');
     
-    // For now, just show a message (we'll add real functionality in Phase 8)
-    alert('🎤 Voice Command feature coming soon!\n\nThis will capture your voice and use the Prompt API to respond.');
+    // Close popup
+    window.close();
+    
+    try {
+      // Get the current tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // Send message to content script to start voice capture
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'startVoiceCapture'
+      });
+      
+    } catch (error) {
+      console.error('Error starting voice command:', error);
+      alert('Error: ' + error.message);
+    }
   });
 
   // ============================================

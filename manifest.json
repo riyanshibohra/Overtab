@@ -28,7 +28,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["ai-helper.js", "content.js"],
       "css": ["styles.css"]
     }
   ],

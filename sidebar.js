@@ -51,6 +51,26 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   console.log('Sidebar initialized');
+  
+  // ============================================
+  // Listen for messages from content script
+  // ============================================
+  
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('Sidebar received message:', message);
+    
+    if (message.action === 'showLoading') {
+      showLoadingState();
+    }
+    
+    if (message.action === 'showResult') {
+      displayAIResult(message.sourceText, message.resultType, message.result);
+    }
+    
+    if (message.action === 'showError') {
+      showError(message.error);
+    }
+  });
 });
 
 // ============================================
@@ -94,26 +114,45 @@ function clearHistory() {
   console.log('History cleared');
 }
 
-// Demo function to test display (we'll use this in Phase 7)
-function displayResult(source, explanation, simplified, translation) {
+// Display AI result
+function displayAIResult(sourceText, resultType, result) {
   // Set source text
-  document.getElementById('result-source-text').textContent = source;
+  document.getElementById('result-source-text').textContent = sourceText;
   
-  // Show/hide sections based on what we have
-  if (explanation) {
-    document.getElementById('explanation-content').textContent = explanation;
+  // Hide all sections first
+  document.getElementById('explanation-section').classList.add('hidden');
+  document.getElementById('simplified-section').classList.add('hidden');
+  document.getElementById('translation-section').classList.add('hidden');
+  
+  // Show the appropriate section
+  if (resultType === 'explanation') {
+    document.getElementById('explanation-content').textContent = result;
     document.getElementById('explanation-section').classList.remove('hidden');
-  }
-  
-  if (simplified) {
-    document.getElementById('simplified-content').textContent = simplified;
+  } else if (resultType === 'simplified') {
+    document.getElementById('simplified-content').textContent = result;
     document.getElementById('simplified-section').classList.remove('hidden');
-  }
-  
-  if (translation) {
-    document.getElementById('translation-content').textContent = translation;
+  } else if (resultType === 'translation') {
+    document.getElementById('translation-content').textContent = result;
     document.getElementById('translation-section').classList.remove('hidden');
   }
   
   showResultDisplay();
+  
+  // Switch to Result tab
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-tab-content').forEach(tc => tc.classList.remove('active'));
+  document.querySelector('.sidebar-tab[data-tab="result"]').classList.add('active');
+  document.getElementById('result-tab').classList.add('active');
+}
+
+// Show error message
+function showError(errorMessage) {
+  // Use the empty state to show error
+  const emptyState = document.getElementById('empty-state');
+  emptyState.innerHTML = `
+    <div class="empty-icon">⚠️</div>
+    <h2>Error</h2>
+    <p>${errorMessage}</p>
+  `;
+  showEmptyState();
 }

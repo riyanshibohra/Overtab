@@ -33,11 +33,19 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'describe-image') {
     console.log('User wants to describe image:', info.srcUrl);
     
-    // For now, just show an alert (we'll add real functionality in Phase 8)
-    // Note: We need to send a message to the content script to show the alert
+    // Open sidebar
+    chrome.sidePanel.open({ tabId: tab.id });
+    
+    // Send loading message
+    chrome.runtime.sendMessage({
+      action: 'showLoading',
+      sourceText: 'Image'
+    });
+    
+    // Send image URL to be described
     chrome.tabs.sendMessage(tab.id, {
-      action: 'showAlert',
-      message: '🖼️ Image description coming soon!\n\nThis will use the Prompt API to describe the image.'
+      action: 'describeImage',
+      imageUrl: info.srcUrl
     });
   }
 });
@@ -57,6 +65,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.sidePanel.open({ tabId: tabs[0].id });
       }
     });
+  }
+  
+  // Forward AI result messages to sidebar
+  if (message.action === 'showLoading' || 
+      message.action === 'showResult' || 
+      message.action === 'showError') {
+    // Send message to sidebar
+    // Note: Sidebar will be listening for these messages
+    chrome.runtime.sendMessage(message);
   }
   
   // No need to return true since we're not sending a response

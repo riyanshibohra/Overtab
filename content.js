@@ -107,18 +107,63 @@ function removeTooltip() {
 // Handle button clicks
 // ============================================
 
-function handleAction(action) {
+async function handleAction(action) {
   const text = currentSelectedText;
-  const preview = text.length > 50 ? text.substring(0, 50) + '...' : text;
   
-  const messages = {
-    explain: `💡 Explain feature coming soon!\n\nSelected text: "${preview}"`,
-    simplify: `✨ Simplify feature coming soon!\n\nSelected text: "${preview}"`,
-    translate: `🌐 Translate feature coming soon!\n\nSelected text: "${preview}"`
-  };
-  
-  alert(messages[action]);
+  // Remove tooltip
   removeTooltip();
+  
+  // Open sidebar and show loading
+  chrome.runtime.sendMessage({ 
+    action: 'openSidebar'
+  });
+  
+  chrome.runtime.sendMessage({
+    action: 'showLoading',
+    sourceText: text
+  });
+  
+  try {
+    let result;
+    
+    // Call appropriate AI function
+    if (action === 'explain') {
+      result = await explainText(text);
+      chrome.runtime.sendMessage({
+        action: 'showResult',
+        sourceText: text,
+        resultType: 'explanation',
+        result: result
+      });
+    } else if (action === 'simplify') {
+      result = await simplifyText(text);
+      chrome.runtime.sendMessage({
+        action: 'showResult',
+        sourceText: text,
+        resultType: 'simplified',
+        result: result
+      });
+    } else if (action === 'translate') {
+      result = await translateText(text, 'es'); // Translate to Spanish for now
+      chrome.runtime.sendMessage({
+        action: 'showResult',
+        sourceText: text,
+        resultType: 'translation',
+        result: result
+      });
+    }
+    
+    console.log(`${action} completed:`, result);
+    
+  } catch (error) {
+    console.error(`Error in ${action}:`, error);
+    
+    // Show error
+    chrome.runtime.sendMessage({
+      action: 'showError',
+      error: error.message || 'AI API not available. Make sure you have Chrome Canary with AI features enabled.'
+    });
+  }
 }
 
 // ============================================
@@ -159,5 +204,181 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     alert(message.message);
   }
   
+  // Handle "Explain Page" from popup
+  if (message.action === 'explainPage') {
+    handleExplainPage(message.text);
+  }
+  
+  // Handle "Voice Command" from popup
+  if (message.action === 'startVoiceCapture') {
+    startVoiceCapture();
+  }
+  
+  // Handle "Describe Image" from context menu
+  if (message.action === 'describeImage') {
+    handleDescribeImage(message.imageUrl);
+  }
+  
   // No need to return true since we're not sending a response
 });
+
+// ============================================
+// Handle "Explain Page" feature
+// ============================================
+
+async function handleExplainPage(pageText) {
+  // Open sidebar and show loading
+  chrome.runtime.sendMessage({ action: 'openSidebar' });
+  
+  chrome.runtime.sendMessage({
+    action: 'showLoading',
+    sourceText: 'Current Page'
+  });
+  
+  try {
+    const result = await explainText(pageText);
+    
+    chrome.runtime.sendMessage({
+      action: 'showResult',
+      sourceText: 'Current Page',
+      resultType: 'explanation',
+      result: result
+    });
+    
+    console.log('Page explanation completed');
+    
+  } catch (error) {
+    console.error('Error explaining page:', error);
+    
+    chrome.runtime.sendMessage({
+      action: 'showError',
+      error: error.message || 'AI API not available. Make sure you have Chrome Canary with AI features enabled.'
+    });
+  }
+}
+
+// ============================================
+// Phase 8: Voice Command
+// ============================================
+
+function startVoiceCapture() {
+  // Check if Web Speech API is available
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('❌ Voice recognition not supported in this browser.');
+    return;
+  }
+  
+  // Create recognition object
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  
+  // Show visual indicator
+  const indicator = document.createElement('div');
+  indicator.id = 'overtab-voice-indicator';
+  indicator.innerHTML = `
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 9999999; 
+                background: white; padding: 16px 24px; border-radius: 12px; 
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 2px solid #1a73e8;">
+      <div style="font-size: 16px; font-weight: 600; color: #1a73e8; margin-bottom: 8px;">
+        🎤 Listening...
+      </div>
+      <div style="font-size: 13px; color: #5f6368;">
+        Speak your question
+      </div>
+    </div>
+  `;
+  document.body.appendChild(indicator);
+  
+  // Handle result
+  recognition.onresult = async function(event) {
+    const transcript = event.results[0][0].transcript;
+    console.log('Voice input:', transcript);
+    
+    // Remove indicator
+    if (indicator && indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+    
+    // Open sidebar and show loading
+    chrome.runtime.sendMessage({ action: 'openSidebar' });
+    
+    chrome.runtime.sendMessage({
+      action: 'showLoading',
+      sourceText: `Voice: "${transcript}"`
+    });
+    
+    try {
+      const result = await promptAI(`Answer this question: ${transcript}`);
+      
+      chrome.runtime.sendMessage({
+        action: 'showResult',
+        sourceText: `Voice: "${transcript}"`,
+        resultType: 'explanation',
+        result: result
+      });
+      
+    } catch (error) {
+      console.error('Error processing voice command:', error);
+      chrome.runtime.sendMessage({
+        action: 'showError',
+        error: error.message || 'Error processing voice command'
+      });
+    }
+  };
+  
+  // Handle errors
+  recognition.onerror = function(event) {
+    console.error('Voice recognition error:', event.error);
+    if (indicator && indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+    alert('❌ Voice recognition error: ' + event.error);
+  };
+  
+  // Handle end
+  recognition.onend = function() {
+    if (indicator && indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+  };
+  
+  // Start listening
+  try {
+    recognition.start();
+  } catch (error) {
+    console.error('Error starting voice recognition:', error);
+    if (indicator && indicator.parentNode) {
+      indicator.parentNode.removeChild(indicator);
+    }
+  }
+}
+
+// ============================================
+// Phase 8: Image Description
+// ============================================
+
+async function handleDescribeImage(imageUrl) {
+  console.log('Describing image:', imageUrl);
+  
+  try {
+    const result = await promptAI(`Describe this image: ${imageUrl}`);
+    
+    chrome.runtime.sendMessage({
+      action: 'showResult',
+      sourceText: `Image: ${imageUrl}`,
+      resultType: 'explanation',
+      result: result
+    });
+    
+  } catch (error) {
+    console.error('Error describing image:', error);
+    chrome.runtime.sendMessage({
+      action: 'showError',
+      error: error.message || 'Error describing image'
+    });
+  }
+}
