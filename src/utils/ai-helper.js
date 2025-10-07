@@ -199,7 +199,13 @@ async function translateText(text, targetLanguage = 'es') {
   };
   
   try {
-    // Use LanguageModel for better formatting preservation
+    // Analyze original format
+    const lines = text.split('\n');
+    const hasBullets = text.match(/^[\*\-•]\s/m);
+    const hasMultipleLines = lines.length > 1;
+    const isShortPhrase = text.trim().split(/\s+/).length <= 5 && !hasMultipleLines;
+    
+    // Use LanguageModel for format-preserving translation
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
       console.log('🟣 [TRANSLATE] LanguageModel availability:', availability);
@@ -207,24 +213,30 @@ async function translateText(text, targetLanguage = 'es') {
       if (availability === 'readily' || availability === 'available') {
         try {
           const session = await LanguageModel.create();
-          const prompt = `Translate the following English text to ${languageNames[targetLanguage] || targetLanguage}. 
+          
+          let instructions = '';
+          if (isShortPhrase) {
+            instructions = 'Translate ONLY the text itself. Do NOT add bullet points, explanations, or extra formatting. Just provide the direct translation.';
+          } else if (hasBullets) {
+            instructions = 'Translate each bullet point. Keep the same bullet markers (*, -, •) and line structure. Do NOT add introductory text.';
+          } else if (hasMultipleLines) {
+            instructions = 'Translate each line/paragraph. Preserve the line breaks and paragraph structure. Do NOT convert to bullet points.';
+          } else {
+            instructions = 'Translate the paragraph. Keep it as a flowing paragraph, do NOT convert to bullet points.';
+          }
+          
+          const prompt = `Translate this English text to ${languageNames[targetLanguage]}:
 
-IMPORTANT: Preserve ALL formatting including:
-- Bullet points (•, *, -)
-- Line breaks
-- Special characters
-- Punctuation
-- Structure and layout
+${text}
 
-Text to translate:
-"${text}"
+${instructions}
 
-Provide ONLY the translated text with the exact same formatting structure.`;
+Provide ONLY the translation, nothing else.`;
           
           const result = await session.prompt(prompt);
           session.destroy();
           logTiming('[TRANSLATE] Success', startTime);
-          return result;
+          return result.trim();
         } catch (err) {
           console.error('🔴 [TRANSLATE] LanguageModel error:', err.message);
           // Fallback to Translator API

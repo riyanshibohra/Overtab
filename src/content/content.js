@@ -6,9 +6,16 @@ let currentSelectedText = '';
 let isProcessing = false;
 let tooltipEnabled = true;
 
-chrome.storage.local.get(['tooltipEnabled'], (result) => {
-  tooltipEnabled = result.tooltipEnabled !== false;
-});
+// Safely access storage
+try {
+  chrome.storage.local.get(['tooltipEnabled']).then((result) => {
+    tooltipEnabled = result.tooltipEnabled !== false;
+  }).catch(() => {
+    tooltipEnabled = true;
+  });
+} catch (e) {
+  tooltipEnabled = true;
+}
 
 // Detect text selection
 document.addEventListener('mouseup', function(event) {
@@ -142,7 +149,11 @@ async function handleAction(action, language = null) {
   removeTooltip();
   
   // Set pending action so sidebar shows loading immediately
-  chrome.storage.session.set({ pendingAction: action });
+  try {
+    chrome.storage.session.set({ pendingAction: action });
+  } catch (e) {
+    console.log('⚠️ Storage access limited, sidebar will show default loading');
+  }
   
   chrome.runtime.sendMessage({ action: 'openSidebar' });
   
@@ -249,7 +260,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Handle "Explain Page" feature
 async function handleExplainPage(pageText) {
   // Set pending action so sidebar shows loading immediately
-  chrome.storage.session.set({ pendingAction: 'explain' });
+  try {
+    chrome.storage.session.set({ pendingAction: 'explain' });
+  } catch (e) {
+    console.log('⚠️ Storage access limited, sidebar will show default loading');
+  }
   
   chrome.runtime.sendMessage({ action: 'openSidebar' });
   

@@ -176,54 +176,49 @@ async function clearHistoryStorage() {
 function formatAIResult(text) {
   if (!text) return '';
   
-  // First, handle markdown formatting in the entire text
-  // Convert **bold** to <strong>bold</strong>
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Split into lines first (before any replacements)
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
-  // Convert bullet points: * or • to proper HTML
-  let formatted = text
-    .split('\n')
-    .map(line => {
-      line = line.trim();
-      
-      // Skip if empty
-      if (line.length === 0) return '';
-      
-      // Bullet points (but not markdown bold which uses **)
-      if ((line.startsWith('*') && !line.startsWith('**')) || line.startsWith('•') || line.startsWith('-')) {
-        let content = line.substring(1).trim();
-        // Remove any remaining single * that might be markdown artifacts
-        content = content.replace(/^\*+/, '').trim();
-        return `<li>${content}</li>`;
-      }
-      // Numbered lists
-      else if (/^\d+\./.test(line)) {
-        return `<li>${line.replace(/^\d+\.\s*/, '')}</li>`;
-      }
-      // Regular paragraphs
-      else {
-        return `<p>${line}</p>`;
-      }
-    })
-    .filter(line => line.length > 0);
+  const formatted = lines.map(line => {
+    // Check for bullet points BEFORE processing markdown
+    const isBullet = line.startsWith('* ') || line.startsWith('- ') || line.startsWith('• ');
+    const isNumbered = /^\d+\.\s/.test(line);
+    
+    // Convert **bold** to <strong> in the line
+    let processed = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    
+    // Handle list items
+    if (isBullet) {
+      // Remove bullet marker
+      processed = processed.replace(/^[\*\-•]\s+/, '');
+      return `<li>${processed}</li>`;
+    } else if (isNumbered) {
+      // Remove number
+      processed = processed.replace(/^\d+\.\s+/, '');
+      return `<li>${processed}</li>`;
+    } else {
+      // Regular paragraph
+      return `<p>${processed}</p>`;
+    }
+  });
   
   // Wrap consecutive <li> in <ul>
   let result = '';
   let inList = false;
   
-  for (const line of formatted) {
-    if (line.startsWith('<li>')) {
+  for (const item of formatted) {
+    if (item.startsWith('<li>')) {
       if (!inList) {
         result += '<ul>';
         inList = true;
       }
-      result += line;
+      result += item;
     } else {
       if (inList) {
         result += '</ul>';
         inList = false;
       }
-      result += line;
+      result += item;
     }
   }
   
@@ -240,16 +235,23 @@ async function displayAIResult(sourceText, resultType, result) {
   document.getElementById('simplified-section').classList.add('hidden');
   document.getElementById('translation-section').classList.add('hidden');
   
-  const formattedResult = formatAIResult(result);
-  
   if (resultType === 'explanation') {
+    const formattedResult = formatAIResult(result);
     document.getElementById('explanation-content').innerHTML = formattedResult;
     document.getElementById('explanation-section').classList.remove('hidden');
   } else if (resultType === 'simplified') {
+    const formattedResult = formatAIResult(result);
     document.getElementById('simplified-content').innerHTML = formattedResult;
     document.getElementById('simplified-section').classList.remove('hidden');
   } else if (resultType === 'translation') {
-    document.getElementById('translation-content').innerHTML = formattedResult;
+    // For translations: preserve exact formatting without auto-formatting
+    // Just escape HTML and convert line breaks
+    const translationHTML = result
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    document.getElementById('translation-content').innerHTML = translationHTML;
     document.getElementById('translation-section').classList.remove('hidden');
   }
   
