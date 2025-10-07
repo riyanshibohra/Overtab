@@ -40,6 +40,7 @@
       
       <div id="result-tab" class="sidebar-tab-content active">
         
+        <!-- Default empty state (no spinner) -->
         <div id="empty-state" class="sidebar-empty-state">
           <div class="empty-icon">💡</div>
           <h2>No results yet</h2>
@@ -52,19 +53,23 @@
             <p>• Press ESC to close tooltip</p>
           </div>
         </div>
-
+        
+        <!-- Active processing state -->
         <div id="loading-state" class="sidebar-loading-state hidden">
-          <div class="loading-spinner"></div>
-          <p>Processing with Gemini Nano...</p>
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">
+              <h4 id="loading-message">Analyzing text...</h4>
+              <div class="loading-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div id="result-display" class="sidebar-result-display hidden">
           
-          <div class="result-source">
-            <span class="result-source-label">Source:</span>
-            <span id="result-source-text" class="result-source-text">Selected text will appear here</span>
-          </div>
-
+          <!-- Results shown first -->
           <div class="result-sections">
             
             <div class="result-section" id="explanation-section">
@@ -101,13 +106,24 @@
             </div>
 
           </div>
+          
+          <!-- Source shown last (collapsible) -->
+          <div class="result-source">
+            <button class="result-source-toggle" id="source-toggle">
+              <span class="result-source-label">📄 Source Text</span>
+              <span class="toggle-icon">▼</span>
+            </button>
+            <div class="result-source-content" id="source-content">
+              <span id="result-source-text" class="result-source-text">Selected text will appear here</span>
+            </div>
+          </div>
         </div>
 
       </div>
 
       <div id="history-tab" class="sidebar-tab-content">
         
-        <div id="history-empty-state" class="sidebar-empty-state">
+        <div id="history-empty-state" class="history-empty-state">
           <div class="empty-icon">📜</div>
           <h2>No history yet</h2>
           <p>Your recent explanations will appear here.</p>
