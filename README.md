@@ -2,15 +2,15 @@
 
 **Your intelligent Chrome companion powered by Gemini Nano.**
 
-Overtab brings on-device AI directly to your browser. Highlight text for instant explanations, ask questions with your voice, or translate content—all without sending data to the cloud.
+Overtab brings on-device AI directly to your browser. Highlight text for instant explanations, ask questions with your voice, or translate content - all without sending data to the cloud!
 
 ## Features
 
-- **Text Selection Tooltip** – Highlight any text to explain, simplify, or translate
-- **Voice Q&A** – Ask questions about the current page using voice commands
-- **Page Summarization** – Get key points from any webpage instantly
-- **On-Device Processing** – All AI runs locally using Chrome's built-in Gemini Nano
-- **Privacy First** – Your data never leaves your device
+- **Text Selection Tooltip** - Highlight any text to explain, simplify, or translate
+- **Voice Q&A** - Ask questions about the current page using voice commands
+- **Page Summarization** - Get key points from any webpage instantly
+- **On-Device Processing** - All AI runs locally using Chrome's built-in Gemini Nano
+- **Privacy First** - Your data never leaves your device
 
 ## Installation
 
