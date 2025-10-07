@@ -40,8 +40,21 @@
       
       <div id="result-tab" class="sidebar-tab-content active">
         
-        <!-- Default empty state (no spinner) -->
-        <div id="empty-state" class="sidebar-empty-state">
+        <!-- Active processing state (default shown) -->
+        <div id="loading-state" class="sidebar-loading-state">
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">
+              <h4 id="loading-message">Ready to assist...</h4>
+              <div class="loading-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Empty state (shown if no action after timeout) -->
+        <div id="empty-state" class="sidebar-empty-state hidden">
           <div class="empty-icon">💡</div>
           <h2>No results yet</h2>
           <p>Highlight text or right-click an image to see AI-powered explanations here.</p>
@@ -51,19 +64,6 @@
             <p>• Right-click images → Describe with Overtab</p>
             <p>• Use Voice Command for questions</p>
             <p>• Press ESC to close tooltip</p>
-          </div>
-        </div>
-        
-        <!-- Active processing state -->
-        <div id="loading-state" class="sidebar-loading-state hidden">
-          <div class="loading-container">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">
-              <h4 id="loading-message">Analyzing text...</h4>
-              <div class="loading-dots">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
           </div>
         </div>
 

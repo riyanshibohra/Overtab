@@ -18,14 +18,26 @@ document.addEventListener('DOMContentLoaded', function() {
         tabContent.classList.add('active');
       }
       
+      // Show empty state for history tab
+      showEmptyState();
       chrome.storage.session.remove(['openTab']);
     } 
-    // If there's a pending action, show active loading
+    // If there's a pending action, update loading message
     else if (result.pendingAction) {
       showLoadingState(result.pendingAction);
       chrome.storage.session.remove(['pendingAction']);
+      
+      // Safety timeout: if no result after 30 seconds, show error
+      setTimeout(() => {
+        const loadingVisible = !document.getElementById('loading-state').classList.contains('hidden');
+        if (loadingVisible) {
+          console.warn('⚠️ Loading timeout');
+          showError('Request timed out. Please try again.');
+        }
+      }, 30000);
     }
-    // Default: empty state is already showing (no spinner)
+    // No pending action: keep showing "Ready to assist..." until action triggered
+    // Don't timeout to empty - just stay ready!
   });
   
   const tabs = document.querySelectorAll('.sidebar-tab');
@@ -132,6 +144,12 @@ function showLoadingState(actionType = 'explain') {
   if (loadingMsg) {
     loadingMsg.textContent = messages[actionType] || 'Processing...';
   }
+}
+
+function showEmptyState() {
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('empty-state').classList.remove('hidden');
+  document.getElementById('result-display').classList.add('hidden');
 }
 
 function showResultDisplay() {

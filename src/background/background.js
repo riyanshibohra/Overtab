@@ -15,16 +15,22 @@ chrome.runtime.onInstalled.addListener(() => {
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'describe-image') {
-    chrome.sidePanel.open({ tabId: tab.id });
-    
-    chrome.runtime.sendMessage({
-      action: 'showLoading',
-      sourceText: 'Image'
-    });
-    
-    chrome.tabs.sendMessage(tab.id, {
-      action: 'describeImage',
-      imageUrl: info.srcUrl
+    // Set pending action BEFORE opening sidebar
+    chrome.storage.session.set({ pendingAction: 'describe' }, () => {
+      chrome.sidePanel.open({ tabId: tab.id });
+      
+      setTimeout(() => {
+        chrome.runtime.sendMessage({
+          action: 'showLoading',
+          actionType: 'describe',
+          sourceText: 'Image'
+        });
+      }, 100);
+      
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'describeImage',
+        imageUrl: info.srcUrl
+      });
     });
   }
 });
