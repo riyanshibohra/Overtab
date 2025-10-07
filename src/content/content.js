@@ -141,8 +141,15 @@ async function handleAction(action, language = null) {
   
   removeTooltip();
   
+  // Set pending action so sidebar shows loading immediately
+  chrome.storage.session.set({ pendingAction: action });
+  
   chrome.runtime.sendMessage({ action: 'openSidebar' });
-  chrome.runtime.sendMessage({ action: 'showLoading', sourceText: text });
+  
+  // Small delay to ensure sidebar is ready
+  setTimeout(() => {
+    chrome.runtime.sendMessage({ action: 'showLoading', actionType: action, sourceText: text });
+  }, 100);
   
   try {
     let result;
@@ -234,11 +241,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Handle "Explain Page" feature
 async function handleExplainPage(pageText) {
+  // Set pending action so sidebar shows loading immediately
+  chrome.storage.session.set({ pendingAction: 'explain' });
+  
   chrome.runtime.sendMessage({ action: 'openSidebar' });
-  chrome.runtime.sendMessage({
-    action: 'showLoading',
-    sourceText: 'Current Page'
-  });
+  
+  // Small delay to ensure sidebar is ready
+  setTimeout(() => {
+    chrome.runtime.sendMessage({
+      action: 'showLoading',
+      actionType: 'explain',
+      sourceText: 'Current Page'
+    });
+  }, 100);
   
   try {
     const result = await explainText(pageText);
