@@ -49,22 +49,54 @@ async function checkAIAvailability() {
   return status;
 }
 
-// Summarizer API - Explain text
+// LanguageModel API - Explain text (with better formatting)
 async function explainText(text) {
   const startTime = Date.now();
   console.log('🔵 [EXPLAIN] Starting... (text length:', text.length, 'chars)');
   
   try {
+    // Try LanguageModel first for better formatted output
+    if (typeof LanguageModel !== 'undefined') {
+      const availability = await LanguageModel.availability();
+      console.log('🔵 [EXPLAIN] LanguageModel availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const session = await LanguageModel.create();
+          const prompt = `Explain the following text clearly and concisely. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:
+
+"${text}"
+
+Format your response as:
+Summary: [one sentence]
+
+Key points:
+* [point 1]
+* [point 2]
+* [point 3]`;
+          
+          const result = await session.prompt(prompt);
+          session.destroy();
+          logTiming('[EXPLAIN] Success', startTime);
+          return result;
+        } catch (err) {
+          console.error('🔴 [EXPLAIN] LanguageModel error:', err.message);
+          // Fallback to Summarizer
+        }
+      }
+    }
+    
+    // Fallback to Summarizer
     if (typeof Summarizer !== 'undefined') {
       const availability = await Summarizer.availability();
-      console.log('🔵 [EXPLAIN] Summarizer availability:', availability);
+      console.log('🔵 [EXPLAIN] Summarizer availability (fallback):', availability);
       
       if (availability === 'readily' || availability === 'available') {
         try {
           const summarizer = await Summarizer.create();
           const result = await summarizer.summarize(text);
           summarizer.destroy();
-          logTiming('[EXPLAIN] Success', startTime);
+          logTiming('[EXPLAIN] Success (Summarizer)', startTime);
           return result;
         } catch (err) {
           console.error('🔴 [EXPLAIN] Error:', err.message);
