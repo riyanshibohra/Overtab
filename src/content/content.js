@@ -214,6 +214,13 @@ document.addEventListener('mouseout', function(event) {
   }
 });
 
+// Ensure we capture the exact image the user right-clicked
+document.addEventListener('contextmenu', function(event) {
+  if (event.target && event.target.tagName === 'IMG') {
+    hoveredImage = event.target;
+  }
+}, true);
+
 // Listen for messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
@@ -372,10 +379,175 @@ Answer the question based on the page content above.`;
   }
 }
 
-// Handle image description
+// Find best-matching <img> element for a given URL (handles srcset/currentSrc)
+function findImageElementByUrl(targetUrl) {
+  try {
+    // Prefer the currently hovered <img> if it matches or if no URL provided
+    if (hoveredImage) {
+      const hSrc = hoveredImage.currentSrc || hoveredImage.src || '';
+      if (!targetUrl || hSrc === targetUrl) return hoveredImage;
+    }
+    const allImages = Array.from(document.images);
+    const normalizedTarget = decodeURI(targetUrl);
+    // Prefer exact currentSrc match, then src, then suffix match
+    const exactCurrent = allImages.find(img => decodeURI(img.currentSrc || '') === normalizedTarget);
+    if (exactCurrent) return exactCurrent;
+    const exactSrc = allImages.find(img => decodeURI(img.src || '') === normalizedTarget);
+    if (exactSrc) return exactSrc;
+    // Fallback: match on filename/suffix
+    const suffixMatch = allImages.find(img =>
+      (img.currentSrc && normalizedTarget.endsWith(decodeURI(new URL(img.currentSrc, location.href).pathname))) ||
+      (img.src && normalizedTarget.endsWith(decodeURI(new URL(img.src, location.href).pathname)))
+    );
+    return suffixMatch || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Collect captions/labels around the image to avoid hallucinations
+function collectImageContext(imgEl, imageUrl) {
+  if (!imgEl) return { alt: '', title: '', ariaLabel: '', caption: '', describedBy: '', nearby: '', linkLabel: '', heading: '', fileNameHint: '', metaOgAlt: '' };
+  const getText = el => (el ? (el.innerText || el.textContent || '').trim() : '');
+  const alt = (imgEl.getAttribute('alt') || '').trim();
+  const title = (imgEl.getAttribute('title') || '').trim();
+  const ariaLabel = (imgEl.getAttribute('aria-label') || '').trim();
+  const longdesc = (imgEl.getAttribute('longdesc') || '').trim();
+
+  // figcaption within a <figure>
+  let caption = '';
+  const figure = imgEl.closest('figure');
+  if (figure) {
+    const fc = figure.querySelector('figcaption');
+    caption = getText(fc);
+  }
+  // Common site-specific caption containers (Wikipedia, news sites, galleries)
+  if (!caption) {
+    const wikiThumb = imgEl.closest('div.thumb');
+    if (wikiThumb) {
+      caption = getText(wikiThumb.querySelector('.thumbcaption')) || caption;
+    }
+  }
+  if (!caption) {
+    const galleryText = imgEl.closest('.gallery') || imgEl.closest('.gallerybox');
+    if (galleryText) caption = getText(galleryText.querySelector('.gallerytext')) || caption;
+  }
+  if (!caption) {
+    const mediaCaption = imgEl.closest('[class*="caption"],[data-caption]');
+    caption = (mediaCaption && (getText(mediaCaption.querySelector('[class*="caption"]')) || mediaCaption.getAttribute('data-caption'))) || caption;
+  }
+
+  // aria-describedby points to caption-like text
+  let describedBy = '';
+  const describedId = imgEl.getAttribute('aria-describedby');
+  if (describedId) {
+    const descEl = document.getElementById(describedId);
+    describedBy = getText(descEl);
+  }
+
+  // Nearby paragraph text (same container)
+  let nearby = '';
+  const container = imgEl.closest('figure, .image, .img, .thumb, .gallery, .photo, article, section, div');
+  if (container) {
+    const p = container.querySelector('p, .caption, .credit, .subtext');
+    nearby = getText(p);
+  }
+
+  // Anchor/link context
+  let linkLabel = '';
+  const a = imgEl.closest('a');
+  if (a) {
+    linkLabel = (a.getAttribute('title') || a.getAttribute('aria-label') || getText(a)).trim();
+  }
+
+  // Nearest heading in ancestors
+  let heading = '';
+  const headingEl = imgEl.closest('section, article, div, main, body')?.querySelector('h1, h2, h3, h4');
+  heading = getText(headingEl);
+
+  // File name hint from URL
+  let fileNameHint = '';
+  try {
+    const u = new URL(imageUrl, location.href);
+    const base = decodeURI(u.pathname.split('/').pop() || '')
+      .replace(/\.[a-zA-Z0-9]+$/, '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    fileNameHint = base;
+  } catch (_) {}
+
+  // Meta Open Graph alt
+  let metaOgAlt = '';
+  const ogAlt = document.querySelector('meta[property="og:image:alt"], meta[name="og:image:alt"]');
+  if (ogAlt && ogAlt.getAttribute('content')) metaOgAlt = ogAlt.getAttribute('content').trim();
+
+  return { alt, title, ariaLabel, caption, describedBy, nearby, linkLabel, heading, fileNameHint, metaOgAlt, longdesc };
+}
+
+// Handle image description (context-driven, no vision)
 async function handleDescribeImage(imageUrl) {
   try {
-    const result = await promptAI(`Describe this image: ${imageUrl}`);
+    const imgEl = findImageElementByUrl(imageUrl);
+    const ctx = collectImageContext(imgEl, imageUrl);
+
+    const fields = [ctx.caption, ctx.alt, ctx.ariaLabel, ctx.title, ctx.describedBy, ctx.nearby, ctx.linkLabel, ctx.heading, ctx.metaOgAlt, ctx.fileNameHint, ctx.longdesc];
+    const hasContext = fields.some(v => (v || '').replace(/[\s_\-.,:;|/\\]/g, '').length >= 4);
+
+    // If truly no context, short-circuit without prompting
+    if (!hasContext) {
+      chrome.runtime.sendMessage({
+        action: 'showResult',
+        sourceText: `Image: ${imageUrl}`,
+        resultType: 'explanation',
+        result: 'Not enough page context to describe this image.'
+      });
+      return;
+    }
+
+    // Synthesize context intelligently
+    const parts = [];
+    if (ctx.caption) parts.push(ctx.caption);
+    else if (ctx.alt) parts.push(ctx.alt);
+    else if (ctx.ariaLabel) parts.push(ctx.ariaLabel);
+    
+    if (ctx.nearby && ctx.nearby !== ctx.caption) parts.push(ctx.nearby);
+    if (ctx.heading && !parts.some(p => p.includes(ctx.heading))) parts.push(`Section: ${ctx.heading}`);
+    if (ctx.fileNameHint && ctx.fileNameHint.length > 3) parts.push(`(${ctx.fileNameHint})`);
+    
+    const synthesized = parts.join(' • ');
+    const pageContext = `Page: "${document.title}"`;
+
+    const prompt = `Based on this context about an image, write 3-4 natural, helpful bullet points describing what it shows. Use **bold** only for key terms (numbers, chart types, important nouns). Be conversational.
+
+Example style:
+- Shows a **bar chart** tracking median home prices from 1963 to 2023
+- Clear **upward trend** with steady growth over 60 years  
+- Recent peak around **$570K** in 2024
+
+${pageContext}
+Image context: ${synthesized}
+
+Write the description now:`;
+
+    let result = await promptAI(prompt);
+    // Clean up the result
+    result = result
+      .split('\n')
+      .filter(l => {
+        const lower = l.toLowerCase();
+        return !/not enough page context/i.test(l) &&
+               !/caption\s+(shows|is)/i.test(l) &&
+               !/alt\s+(text|is)/i.test(l) &&
+               !/filename/i.test(lower) &&
+               l.trim().length > 0;
+      })
+      .join('\n')
+      .trim();
+    
+    if (!result) {
+      result = 'Not enough page context to describe this image.';
+    }
     
     chrome.runtime.sendMessage({
       action: 'showResult',

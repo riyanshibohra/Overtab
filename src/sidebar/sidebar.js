@@ -158,25 +158,34 @@ async function clearHistoryStorage() {
 function formatAIResult(text) {
   if (!text) return '';
   
+  // First, handle markdown formatting in the entire text
+  // Convert **bold** to <strong>bold</strong>
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
   // Convert bullet points: * or • to proper HTML
   let formatted = text
     .split('\n')
     .map(line => {
       line = line.trim();
       
-      // Bullet points
-      if (line.startsWith('*') || line.startsWith('•') || line.startsWith('-')) {
-        return `<li>${line.substring(1).trim()}</li>`;
+      // Skip if empty
+      if (line.length === 0) return '';
+      
+      // Bullet points (but not markdown bold which uses **)
+      if ((line.startsWith('*') && !line.startsWith('**')) || line.startsWith('•') || line.startsWith('-')) {
+        let content = line.substring(1).trim();
+        // Remove any remaining single * that might be markdown artifacts
+        content = content.replace(/^\*+/, '').trim();
+        return `<li>${content}</li>`;
       }
       // Numbered lists
       else if (/^\d+\./.test(line)) {
         return `<li>${line.replace(/^\d+\.\s*/, '')}</li>`;
       }
       // Regular paragraphs
-      else if (line.length > 0) {
+      else {
         return `<p>${line}</p>`;
       }
-      return '';
     })
     .filter(line => line.length > 0);
   

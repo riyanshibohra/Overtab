@@ -123,16 +123,46 @@ async function simplifyText(text) {
   console.log('🟢 [SIMPLIFY] Starting... (text length:', text.length, 'chars)');
   
   try {
+    // Use LanguageModel for better control over simplification
+    if (typeof LanguageModel !== 'undefined') {
+      const availability = await LanguageModel.availability();
+      console.log('🟢 [SIMPLIFY] LanguageModel availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const session = await LanguageModel.create();
+          const prompt = `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand. Break down complex concepts into clear, short sentences. Avoid jargon and technical terms.
+
+"${text}"
+
+Provide a simplified version that is:
+- Written in plain, everyday language
+- Shorter and more direct
+- Easy for anyone to understand
+- Free of complicated words`;
+          
+          const result = await session.prompt(prompt);
+          session.destroy();
+          logTiming('[SIMPLIFY] Success', startTime);
+          return result;
+        } catch (err) {
+          console.error('🔴 [SIMPLIFY] LanguageModel error:', err.message);
+          // Fallback to Rewriter
+        }
+      }
+    }
+    
+    // Fallback to Rewriter API
     if (typeof Rewriter !== 'undefined') {
       const availability = await Rewriter.availability();
-      console.log('🟢 [SIMPLIFY] Rewriter availability:', availability);
+      console.log('🟢 [SIMPLIFY] Rewriter availability (fallback):', availability);
       
       if (availability === 'readily' || availability === 'available') {
         try {
           const rewriter = await Rewriter.create();
           const result = await rewriter.rewrite(text);
           rewriter.destroy();
-          logTiming('[SIMPLIFY] Success', startTime);
+          logTiming('[SIMPLIFY] Success (Rewriter)', startTime);
           return result;
         } catch (err) {
           console.error('🔴 [SIMPLIFY] Error:', err.message);
@@ -159,14 +189,56 @@ async function translateText(text, targetLanguage = 'es') {
   const startTime = Date.now();
   console.log('🟣 [TRANSLATE] Starting... (en →', targetLanguage, ')');
   
+  const languageNames = {
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'it': 'Italian',
+    'ja': 'Japanese',
+    'hi': 'Hindi'
+  };
+  
   try {
+    // Use LanguageModel for better formatting preservation
+    if (typeof LanguageModel !== 'undefined') {
+      const availability = await LanguageModel.availability();
+      console.log('🟣 [TRANSLATE] LanguageModel availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const session = await LanguageModel.create();
+          const prompt = `Translate the following English text to ${languageNames[targetLanguage] || targetLanguage}. 
+
+IMPORTANT: Preserve ALL formatting including:
+- Bullet points (•, *, -)
+- Line breaks
+- Special characters
+- Punctuation
+- Structure and layout
+
+Text to translate:
+"${text}"
+
+Provide ONLY the translated text with the exact same formatting structure.`;
+          
+          const result = await session.prompt(prompt);
+          session.destroy();
+          logTiming('[TRANSLATE] Success', startTime);
+          return result;
+        } catch (err) {
+          console.error('🔴 [TRANSLATE] LanguageModel error:', err.message);
+          // Fallback to Translator API
+        }
+      }
+    }
+    
+    // Fallback to Translator API
     if (typeof Translator !== 'undefined') {
-      // Translator.availability() requires language pair
       const availability = await Translator.availability({
         sourceLanguage: 'en',
         targetLanguage: targetLanguage
       });
-      console.log('🟣 [TRANSLATE] Availability:', availability);
+      console.log('🟣 [TRANSLATE] Translator availability (fallback):', availability);
       
       if (availability === 'readily' || availability === 'available') {
         const translator = await Translator.create({
@@ -175,11 +247,10 @@ async function translateText(text, targetLanguage = 'es') {
         });
         const result = await translator.translate(text);
         translator.destroy();
-        logTiming('[TRANSLATE] Success', startTime);
+        logTiming('[TRANSLATE] Success (Translator)', startTime);
         return result;
       } else if (availability === 'after-download' || availability === 'downloadable') {
         console.log('🟡 [TRANSLATE] Downloading language pack for', targetLanguage, '...');
-        // Try to trigger download by creating translator
         const translator = await Translator.create({
           sourceLanguage: 'en',
           targetLanguage: targetLanguage
@@ -196,15 +267,6 @@ async function translateText(text, targetLanguage = 'es') {
     
     console.log('🟡 [TRANSLATE] Using demo mode');
     await simulateDelay();
-    
-    const languageNames = {
-      'es': 'Spanish (Español)',
-      'fr': 'French (Français)',
-      'de': 'German (Deutsch)',
-      'it': 'Italian (Italiano)',
-      'ja': 'Japanese (日本語)',
-      'hi': 'Hindi (हिन्दी)'
-    };
     
     return `🌐 DEMO MODE - Translation to ${languageNames[targetLanguage] || targetLanguage}:\n\n[This is where the translated text would appear]\n\nOriginal text: "${text.substring(0, 50)}..."\n\nIn production, this would use Chrome's Translation API with Gemini Nano to provide accurate on-device translation while maintaining your privacy.\n\n✨ Real AI translation will be used when Chrome Built-in AI APIs become available.`;
     
