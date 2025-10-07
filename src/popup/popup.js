@@ -85,9 +85,20 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // History button
-  historyBtn.addEventListener('click', function() {
-    chrome.runtime.sendMessage({ action: 'openSidebar' });
-    window.close();
+  historyBtn.addEventListener('click', async function() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // Set flag to open history tab
+      await chrome.storage.session.set({ openTab: 'history' });
+      
+      // Open sidebar
+      await chrome.sidePanel.open({ tabId: tab.id });
+      
+      window.close();
+    } catch (error) {
+      console.error('Error opening history:', error);
+    }
   });
 
 });
