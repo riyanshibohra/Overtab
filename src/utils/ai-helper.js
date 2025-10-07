@@ -1,12 +1,5 @@
-// ============================================
-// Overtab AI Helper - Phase 7
-// ============================================
-// Helper functions for Chrome Built-in AI APIs
-// (Summarizer, Rewriter, Translator, Prompt)
-
-// ============================================
-// Check if AI APIs are available
-// ============================================
+// Overtab AI Helper
+// Chrome Built-in AI APIs with demo mode fallback
 
 async function checkAIAvailability() {
   const status = {
@@ -17,24 +10,20 @@ async function checkAIAvailability() {
   };
   
   try {
-    // Check Summarizer API
     if (window.ai && window.ai.summarizer) {
       const summarizerStatus = await window.ai.summarizer.capabilities();
       status.summarizer = summarizerStatus.available === 'readily';
     }
     
-    // Check Rewriter API
     if (window.ai && window.ai.rewriter) {
       const rewriterStatus = await window.ai.rewriter.capabilities();
       status.rewriter = rewriterStatus.available === 'readily';
     }
     
-    // Check Translator API
     if (window.ai && window.ai.translator) {
-      status.translator = true; // Will check language pairs when needed
+      status.translator = true;
     }
     
-    // Check Prompt API
     if (window.ai && window.ai.languageModel) {
       const promptStatus = await window.ai.languageModel.capabilities();
       status.prompt = promptStatus.available === 'readily';
@@ -46,17 +35,12 @@ async function checkAIAvailability() {
   return status;
 }
 
-// ============================================
-// Summarizer API - For "Explain"
-// ============================================
-
+// Summarizer API - Explain text
 async function explainText(text) {
   try {
-    // Check if real AI is available
     if (window.ai && window.ai.summarizer) {
       const capabilities = await window.ai.summarizer.capabilities();
       if (capabilities.available === 'readily') {
-        // Use real API
         const summarizer = await window.ai.summarizer.create({
           type: 'key-points',
           length: 'medium',
@@ -68,7 +52,6 @@ async function explainText(text) {
       }
     }
     
-    // Fallback: Use demo mode
     console.log('Using demo mode for explanation');
     await simulateDelay();
     
@@ -81,17 +64,12 @@ async function explainText(text) {
   }
 }
 
-// ============================================
-// Rewriter API - For "Simplify"
-// ============================================
-
+// Rewriter API - Simplify text
 async function simplifyText(text) {
   try {
-    // Check if real AI is available
     if (window.ai && window.ai.rewriter) {
       const capabilities = await window.ai.rewriter.capabilities();
       if (capabilities.available === 'readily') {
-        // Use real API
         const rewriter = await window.ai.rewriter.create({
           tone: 'casual',
           format: 'plain-text',
@@ -103,7 +81,6 @@ async function simplifyText(text) {
       }
     }
     
-    // Fallback: Use demo mode
     console.log('Using demo mode for simplification');
     await simulateDelay();
     
@@ -116,13 +93,9 @@ async function simplifyText(text) {
   }
 }
 
-// ============================================
-// Translator API - For "Translate"
-// ============================================
-
+// Translator API - Translate text
 async function translateText(text, targetLanguage = 'es') {
   try {
-    // Check if real AI is available
     if (window.ai && window.ai.translator) {
       const sourceLanguage = 'en';
       const canTranslate = await window.ai.translator.canTranslate({
@@ -131,7 +104,6 @@ async function translateText(text, targetLanguage = 'es') {
       });
       
       if (canTranslate === 'readily') {
-        // Use real API
         const translator = await window.ai.translator.create({
           sourceLanguage,
           targetLanguage
@@ -142,7 +114,6 @@ async function translateText(text, targetLanguage = 'es') {
       }
     }
     
-    // Fallback: Use demo mode
     console.log('Using demo mode for translation');
     await simulateDelay();
     
@@ -162,27 +133,18 @@ async function translateText(text, targetLanguage = 'es') {
   }
 }
 
-// ============================================
-// Helper: Simulate AI processing delay
-// ============================================
-
+// Simulate AI processing delay
 function simulateDelay() {
-  // Simulate realistic AI processing time (500-1500ms)
   const delay = 500 + Math.random() * 1000;
   return new Promise(resolve => setTimeout(resolve, delay));
 }
 
-// ============================================
-// Prompt API - For general queries and images
-// ============================================
-
+// Prompt API - General queries
 async function promptAI(prompt) {
   try {
-    // Check if real AI is available
     if (window.ai && window.ai.languageModel) {
       const capabilities = await window.ai.languageModel.capabilities();
       if (capabilities.available === 'readily') {
-        // Use real API
         const session = await window.ai.languageModel.create({
           temperature: 0.7,
           topK: 3
@@ -193,17 +155,14 @@ async function promptAI(prompt) {
       }
     }
     
-    // Fallback: Use demo mode
     console.log('Using demo mode for Prompt API');
     await simulateDelay();
     
-    // Check if it's an image description request
     if (prompt.toLowerCase().includes('describe this image')) {
-      return `🖼️ DEMO MODE - Image Description:\n\nThis is a demonstration of the image description feature. In production, this would:\n\n• Use Chrome's Prompt API with Gemini Nano\n• Analyze the image content\n• Provide detailed descriptions of what's visible\n• Identify objects, scenes, text, and context\n• All processing happens on-device for privacy\n\nExample description: "The image appears to show [subject]. The scene includes [details]. The overall composition suggests [context]."\n\n✨ Real AI image analysis will be available when Chrome Built-in AI APIs support multimodal inputs.`;
+      return `🖼️ DEMO MODE - Image Description:\n\nThis is a demonstration of the image description feature. In production, this would use Chrome's Prompt API with Gemini Nano to analyze the image content and provide detailed descriptions.\n\n✨ Real AI image analysis will be available when Chrome Built-in AI APIs support multimodal inputs.`;
     }
     
-    // For voice/text queries
-    return `🤖 DEMO MODE - AI Response:\n\nYour question: "${prompt}"\n\nThis is a demonstration of the Prompt API feature. In production, this would:\n\n• Process your question using Gemini Nano\n• Provide intelligent, context-aware answers\n• Support follow-up questions\n• Work completely offline and on-device\n• Maintain your privacy (no data sent to servers)\n\nExample response: "Based on your question, here's what I can tell you... [intelligent answer would appear here]"\n\n✨ Real AI responses will be available when Chrome Built-in AI APIs become available in your browser.`;
+    return `🤖 DEMO MODE - AI Response:\n\nYour question: "${prompt}"\n\nThis is a demonstration of the Prompt API feature. In production, this would process your question using Gemini Nano and provide intelligent, context-aware answers while maintaining your privacy.\n\n✨ Real AI responses will be available when Chrome Built-in AI APIs become available in your browser.`;
     
   } catch (error) {
     console.error('Prompt AI error:', error);
