@@ -1,58 +1,79 @@
 // Overtab AI Helper
 // Chrome Built-in AI APIs with demo mode fallback
 
+// Performance logger
+function logTiming(label, startTime) {
+  console.log(`⏱️ ${label}: ${Date.now() - startTime}ms`);
+}
+
 async function checkAIAvailability() {
   const status = {
     summarizer: false,
     rewriter: false,
     translator: false,
-    prompt: false
+    prompt: false,
+    languageModel: false
   };
   
   try {
-    if (window.ai && window.ai.summarizer) {
-      const summarizerStatus = await window.ai.summarizer.capabilities();
-      status.summarizer = summarizerStatus.available === 'readily';
+    // New API format: LanguageModel, Summarizer, etc. (capital letters)
+    // Check LanguageModel (Prompt API)
+    if (typeof LanguageModel !== 'undefined') {
+      const availability = await LanguageModel.availability();
+      status.prompt = availability === 'readily';
+      status.languageModel = availability === 'readily';
     }
     
-    if (window.ai && window.ai.rewriter) {
-      const rewriterStatus = await window.ai.rewriter.capabilities();
-      status.rewriter = rewriterStatus.available === 'readily';
+    // Check Summarizer
+    if (typeof Summarizer !== 'undefined') {
+      const availability = await Summarizer.availability();
+      status.summarizer = availability === 'readily';
     }
     
-    if (window.ai && window.ai.translator) {
-      status.translator = true;
+    // Check Rewriter
+    if (typeof Rewriter !== 'undefined') {
+      const availability = await Rewriter.availability();
+      status.rewriter = availability === 'readily';
     }
     
-    if (window.ai && window.ai.languageModel) {
-      const promptStatus = await window.ai.languageModel.capabilities();
-      status.prompt = promptStatus.available === 'readily';
+    // Check Translator
+    if (typeof Translator !== 'undefined') {
+      const availability = await Translator.availability();
+      status.translator = availability === 'readily';
     }
   } catch (error) {
     console.error('Error checking AI availability:', error);
   }
   
+  console.log('🤖 Overtab AI Status:', status);
   return status;
 }
 
 // Summarizer API - Explain text
 async function explainText(text) {
+  const startTime = Date.now();
+  console.log('🔵 [EXPLAIN] Starting... (text length:', text.length, 'chars)');
+  
   try {
-    if (window.ai && window.ai.summarizer) {
-      const capabilities = await window.ai.summarizer.capabilities();
-      if (capabilities.available === 'readily') {
-        const summarizer = await window.ai.summarizer.create({
-          type: 'key-points',
-          length: 'medium',
-          format: 'plain-text'
-        });
-        const result = await summarizer.summarize(text);
-        summarizer.destroy();
-        return result;
+    if (typeof Summarizer !== 'undefined') {
+      const availability = await Summarizer.availability();
+      console.log('🔵 [EXPLAIN] Summarizer availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const summarizer = await Summarizer.create();
+          const result = await summarizer.summarize(text);
+          summarizer.destroy();
+          logTiming('[EXPLAIN] Success', startTime);
+          return result;
+        } catch (err) {
+          console.error('🔴 [EXPLAIN] Error:', err.message);
+          throw err;
+        }
       }
     }
     
-    console.log('Using demo mode for explanation');
+    console.log('🟡 [EXPLAIN] Using demo mode');
     await simulateDelay();
     
     const preview = text.length > 100 ? text.substring(0, 100) + '...' : text;
@@ -66,22 +87,29 @@ async function explainText(text) {
 
 // Rewriter API - Simplify text
 async function simplifyText(text) {
+  const startTime = Date.now();
+  console.log('🟢 [SIMPLIFY] Starting... (text length:', text.length, 'chars)');
+  
   try {
-    if (window.ai && window.ai.rewriter) {
-      const capabilities = await window.ai.rewriter.capabilities();
-      if (capabilities.available === 'readily') {
-        const rewriter = await window.ai.rewriter.create({
-          tone: 'casual',
-          format: 'plain-text',
-          length: 'shorter'
-        });
-        const result = await rewriter.rewrite(text);
-        rewriter.destroy();
-        return result;
+    if (typeof Rewriter !== 'undefined') {
+      const availability = await Rewriter.availability();
+      console.log('🟢 [SIMPLIFY] Rewriter availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const rewriter = await Rewriter.create();
+          const result = await rewriter.rewrite(text);
+          rewriter.destroy();
+          logTiming('[SIMPLIFY] Success', startTime);
+          return result;
+        } catch (err) {
+          console.error('🔴 [SIMPLIFY] Error:', err.message);
+          throw err;
+        }
       }
     }
     
-    console.log('Using demo mode for simplification');
+    console.log('🟡 [SIMPLIFY] Using demo mode');
     await simulateDelay();
     
     const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
@@ -94,27 +122,47 @@ async function simplifyText(text) {
 }
 
 // Translator API - Translate text
+// Supported languages: Spanish, French, German, Italian, Japanese, Hindi
 async function translateText(text, targetLanguage = 'es') {
+  const startTime = Date.now();
+  console.log('🟣 [TRANSLATE] Starting... (en →', targetLanguage, ')');
+  
   try {
-    if (window.ai && window.ai.translator) {
-      const sourceLanguage = 'en';
-      const canTranslate = await window.ai.translator.canTranslate({
-        sourceLanguage,
-        targetLanguage
+    if (typeof Translator !== 'undefined') {
+      // Translator.availability() requires language pair
+      const availability = await Translator.availability({
+        sourceLanguage: 'en',
+        targetLanguage: targetLanguage
       });
+      console.log('🟣 [TRANSLATE] Availability:', availability);
       
-      if (canTranslate === 'readily') {
-        const translator = await window.ai.translator.create({
-          sourceLanguage,
-          targetLanguage
+      if (availability === 'readily' || availability === 'available') {
+        const translator = await Translator.create({
+          sourceLanguage: 'en',
+          targetLanguage: targetLanguage
         });
         const result = await translator.translate(text);
         translator.destroy();
+        logTiming('[TRANSLATE] Success', startTime);
         return result;
+      } else if (availability === 'after-download' || availability === 'downloadable') {
+        console.log('🟡 [TRANSLATE] Downloading language pack for', targetLanguage, '...');
+        // Try to trigger download by creating translator
+        const translator = await Translator.create({
+          sourceLanguage: 'en',
+          targetLanguage: targetLanguage
+        });
+        const result = await translator.translate(text);
+        translator.destroy();
+        logTiming('[TRANSLATE] Success (after download)', startTime);
+        return result;
+      } else {
+        console.error('🔴 [TRANSLATE] Not supported:', availability);
+        throw new Error(`Translation to ${targetLanguage} not supported`);
       }
     }
     
-    console.log('Using demo mode for translation');
+    console.log('🟡 [TRANSLATE] Using demo mode');
     await simulateDelay();
     
     const languageNames = {
@@ -122,7 +170,8 @@ async function translateText(text, targetLanguage = 'es') {
       'fr': 'French (Français)',
       'de': 'German (Deutsch)',
       'it': 'Italian (Italiano)',
-      'ja': 'Japanese (日本語)'
+      'ja': 'Japanese (日本語)',
+      'hi': 'Hindi (हिन्दी)'
     };
     
     return `🌐 DEMO MODE - Translation to ${languageNames[targetLanguage] || targetLanguage}:\n\n[This is where the translated text would appear]\n\nOriginal text: "${text.substring(0, 50)}..."\n\nIn production, this would use Chrome's Translation API with Gemini Nano to provide accurate on-device translation while maintaining your privacy.\n\n✨ Real AI translation will be used when Chrome Built-in AI APIs become available.`;
@@ -139,23 +188,34 @@ function simulateDelay() {
   return new Promise(resolve => setTimeout(resolve, delay));
 }
 
-// Prompt API - General queries
+// Prompt API - General queries  
 async function promptAI(prompt) {
+  const startTime = Date.now();
+  console.log('🟠 [PROMPT] Starting... (prompt length:', prompt.length, 'chars)');
+  
   try {
-    if (window.ai && window.ai.languageModel) {
-      const capabilities = await window.ai.languageModel.capabilities();
-      if (capabilities.available === 'readily') {
-        const session = await window.ai.languageModel.create({
-          temperature: 0.7,
-          topK: 3
-        });
-        const result = await session.prompt(prompt);
-        session.destroy();
-        return result;
+    if (typeof LanguageModel !== 'undefined') {
+      const availability = await LanguageModel.availability();
+      console.log('🟠 [PROMPT] LanguageModel availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const session = await LanguageModel.create({
+            temperature: 0.7,
+            topK: 40
+          });
+          const result = await session.prompt(prompt);
+          session.destroy();
+          logTiming('[PROMPT] Success', startTime);
+          return result;
+        } catch (err) {
+          console.error('🔴 [PROMPT] Error:', err.message);
+          throw err;
+        }
       }
     }
     
-    console.log('Using demo mode for Prompt API');
+    console.log('🟡 [PROMPT] Using demo mode');
     await simulateDelay();
     
     if (prompt.toLowerCase().includes('describe this image')) {

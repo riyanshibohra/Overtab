@@ -62,10 +62,20 @@ function showTooltip(selectionRect) {
       <span class="tooltip-btn-icon">✨</span>
       <span class="tooltip-btn-text">Simplify</span>
     </button>
-    <button class="overtab-tooltip-btn" data-action="translate">
-      <span class="tooltip-btn-icon">🌐</span>
-      <span class="tooltip-btn-text">Translate</span>
-    </button>
+    <div class="translate-dropdown">
+      <button class="overtab-tooltip-btn translate-main-btn">
+        <span class="tooltip-btn-icon">🌐</span>
+        <span class="tooltip-btn-text">Translate</span>
+      </button>
+      <div class="translate-lang-menu" style="display: none;">
+        <button class="lang-option" data-action="translate" data-lang="es">🇪🇸 Spanish</button>
+        <button class="lang-option" data-action="translate" data-lang="fr">🇫🇷 French</button>
+        <button class="lang-option" data-action="translate" data-lang="de">🇩🇪 German</button>
+        <button class="lang-option" data-action="translate" data-lang="it">🇮🇹 Italian</button>
+        <button class="lang-option" data-action="translate" data-lang="ja">🇯🇵 Japanese</button>
+        <button class="lang-option" data-action="translate" data-lang="hi">🇮🇳 Hindi</button>
+      </div>
+    </div>
   `;
   
   document.body.appendChild(tooltip);
@@ -85,12 +95,34 @@ function showTooltip(selectionRect) {
   tooltip.style.left = left + 'px';
   tooltip.style.top = top + 'px';
   
-  tooltip.querySelectorAll('.overtab-tooltip-btn').forEach(button => {
+  // Event listeners for Explain and Simplify buttons
+  tooltip.querySelectorAll('.overtab-tooltip-btn:not(.translate-main-btn)').forEach(button => {
     button.addEventListener('click', function() {
       const action = this.getAttribute('data-action');
       handleAction(action);
     });
   });
+  
+  // Translate dropdown toggle
+  const translateBtn = tooltip.querySelector('.translate-main-btn');
+  const langMenu = tooltip.querySelector('.translate-lang-menu');
+  
+  if (translateBtn && langMenu) {
+    translateBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const isVisible = langMenu.style.display === 'block';
+      langMenu.style.display = isVisible ? 'none' : 'block';
+    });
+    
+    // Language option click
+    tooltip.querySelectorAll('.lang-option').forEach(option => {
+      option.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const lang = this.getAttribute('data-lang');
+        handleAction('translate', lang);
+      });
+    });
+  }
 }
 
 function removeTooltip() {
@@ -101,7 +133,7 @@ function removeTooltip() {
 }
 
 // Handle tooltip button clicks
-async function handleAction(action) {
+async function handleAction(action, language = null) {
   if (isProcessing) return;
   
   isProcessing = true;
@@ -132,12 +164,16 @@ async function handleAction(action) {
         result: result
       });
     } else if (action === 'translate') {
-      result = await translateText(text, 'es');
+      // Use selected language or default to Spanish
+      const targetLang = language || 'es';
+      
+      result = await translateText(text, targetLang);
       chrome.runtime.sendMessage({
         action: 'showResult',
         sourceText: text,
         resultType: 'translation',
-        result: result
+        result: result,
+        targetLanguage: targetLang
       });
     }
     
