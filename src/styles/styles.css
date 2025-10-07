@@ -1,6 +1,4 @@
-/* ============================================
-   Overtab Styles - Phase 2: Popup Interface
-   ============================================ */
+/* Overtab Styles */
 
 /* Reset and base styles */
 * {
@@ -16,10 +14,7 @@ body {
   background-color: #ffffff;
 }
 
-/* ============================================
-   Popup Container
-   ============================================ */
-
+/* Popup */
 .popup-container {
   width: 340px;
   min-height: 320px;
@@ -29,10 +24,6 @@ body {
   overflow: hidden;
   border-radius: 12px;
 }
-
-/* ============================================
-   Header Section - Clean & Professional
-   ============================================ */
 
 .popup-header {
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
@@ -71,10 +62,6 @@ body {
   letter-spacing: 0.2px;
 }
 
-/* ============================================
-   Button Group
-   ============================================ */
-
 .button-group {
   display: flex;
   flex-direction: column;
@@ -83,10 +70,7 @@ body {
   flex: 1;
 }
 
-/* ============================================
-   Action Buttons - Ultra Professional
-   ============================================ */
-
+/* Action buttons */
 .action-button {
   display: flex;
   align-items: center;
@@ -163,10 +147,7 @@ body {
   user-select: none;
 }
 
-/* ============================================
-   Status Badge - Minimal Professional
-   ============================================ */
-
+/* Status badge */
 .status-badge {
   display: flex;
   align-items: center;
@@ -227,10 +208,7 @@ body {
   letter-spacing: 0.8px;
 }
 
-/* ============================================
-   Phase 4: Tooltip for text selection
-   ============================================ */
-
+/* Tooltip */
 .overtab-tooltip {
   position: fixed;
   display: flex;
@@ -301,10 +279,7 @@ body {
   box-shadow: 0 2px 4px rgba(66, 133, 244, 0.1);
 }
 
-/* ============================================
-   Phase 5: Image hover effect
-   ============================================ */
-
+/* Image hover */
 .overtab-image-hover {
   outline: 3px solid #1a73e8 !important;
   outline-offset: 2px;
@@ -313,10 +288,7 @@ body {
   transition: all 0.2s ease;
 }
 
-/* ============================================
-   Phase 6: Sidebar Styles
-   ============================================ */
-
+/* Sidebar */
 .sidebar-body {
   margin: 0;
   padding: 0;
@@ -333,7 +305,6 @@ body {
   background: #ffffff;
 }
 
-/* Header - Modern Design */
 .sidebar-header {
   display: flex;
   justify-content: space-between;
@@ -411,7 +382,6 @@ body {
   transform: scale(0.95);
 }
 
-/* Tabs - Modern Design */
 .sidebar-tabs {
   display: flex;
   gap: 4px;
@@ -456,7 +426,6 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-/* Content Area */
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
@@ -471,7 +440,6 @@ body {
   display: block;
 }
 
-/* Empty State */
 .sidebar-empty-state {
   text-align: center;
   padding: 80px 24px;
@@ -524,7 +492,6 @@ body {
   font-size: 14px;
 }
 
-/* Loading State */
 .sidebar-loading-state {
   text-align: center;
   padding: 80px 24px;
@@ -552,7 +519,6 @@ body {
   font-weight: 500;
 }
 
-/* Result Display */
 .sidebar-result-display {
   animation: fadeIn 0.3s ease;
 }
@@ -590,7 +556,6 @@ body {
   font-weight: 500;
 }
 
-/* Result Sections */
 .result-sections {
   display: flex;
   flex-direction: column;
@@ -632,7 +597,6 @@ body {
   letter-spacing: -0.2px;
 }
 
-/* Copy button - Modern Design */
 .copy-btn {
   padding: 6px 10px;
   background: #ffffff;
@@ -659,7 +623,6 @@ body {
   word-break: break-word;
 }
 
-/* History */
 .sidebar-history-list {
   display: flex;
   flex-direction: column;
@@ -738,7 +701,6 @@ body {
   box-shadow: 0 2px 6px rgba(217, 48, 37, 0.15);
 }
 
-/* Footer */
 .sidebar-footer {
   padding: 14px 20px;
   border-top: 1px solid #e8eaed;
@@ -787,15 +749,11 @@ body {
   letter-spacing: 0.8px;
 }
 
-/* Utility */
 .hidden {
   display: none !important;
 }
 
-/* ============================================
-   Phase 11: Polish - Toast Notifications
-   ============================================ */
-
+/* Toast notifications */
 .overtab-toast {
   position: fixed;
   bottom: 20px;
