@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (typeof LanguageModel !== 'undefined') {
         const availability = await LanguageModel.availability();
         
-        if (availability === 'readily') {
+        if (availability === 'readily' || availability === 'available') {
           geminiStatus.textContent = '✓ Gemini Nano is available and ready';
           geminiStatus.style.color = '#0f9d58';
         } else {

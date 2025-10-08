@@ -21,40 +21,23 @@ async function getOpenAISettings() {
   }
 }
 
-async function getAIPreferences() {
+async function shouldUseOpenAI() {
   try {
-    const prefs = await chrome.storage.local.get(['primaryProvider', 'fallbackPreference', 'openaiApiKey']);
-    return {
-      primary: prefs.primaryProvider || 'gemini-nano',
-      fallback: prefs.fallbackPreference || 'try-other',
-      hasApiKey: !!prefs.openaiApiKey
-    };
-  } catch (error) {
-    return {
-      primary: 'gemini-nano',
-      fallback: 'try-other',
-      hasApiKey: false
-    };
-  }
-}
-
-async function shouldUseOpenAI(isPrimary = false, isFallback = false) {
-  const prefs = await getAIPreferences();
-  
-  // If this is being called as primary provider
-  if (isPrimary) {
-    return prefs.primary === 'openai' && prefs.hasApiKey;
-  }
-  
-  // If this is being called as fallback
-  if (isFallback) {
-    if (prefs.fallback === 'demo-only' || prefs.fallback === 'fail') {
-      return false;
+    const prefs = await chrome.storage.local.get(['fallbackPreference', 'openaiApiKey']);
+    const fallback = prefs.fallbackPreference || 'openai-first';
+    
+    if (fallback === 'demo-only') {
+      return false; // Skip OpenAI, go straight to demo
     }
-    return prefs.fallback === 'try-other' && prefs.hasApiKey;
+    
+    if (fallback === 'fail') {
+      return false; // Skip OpenAI, will throw error
+    }
+    
+    return !!prefs.openaiApiKey; // Only use if API key exists
+  } catch (error) {
+    return false;
   }
-  
-  return false;
 }
 
 async function callOpenAI(systemPrompt, userPrompt, maxTokens = 500) {
@@ -144,24 +127,7 @@ async function explainText(text) {
   console.log('🔵 [EXPLAIN] Starting... (text length:', text.length, 'chars)');
   
   try {
-    // Check if OpenAI is the primary provider
-    if (await shouldUseOpenAI(true, false)) {
-      try {
-        console.log('🟢 [EXPLAIN] Using OpenAI (Primary Provider)');
-        const result = await callOpenAI(
-          'You are a helpful AI assistant that explains text clearly and concisely.',
-          `Explain the following text. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:\n\n"${text.substring(0, 3000)}"`,
-          600
-        );
-        logTiming('[EXPLAIN] Success (OpenAI Primary)', startTime);
-        return result;
-      } catch (err) {
-        console.error('🔴 [EXPLAIN] OpenAI primary failed:', err.message);
-        // Continue to try Gemini Nano as fallback
-      }
-    }
-    
-    // Try LanguageModel (Gemini Nano) for better formatted output
+    // Try LanguageModel first for better formatted output
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
       console.log('🔵 [EXPLAIN] LanguageModel availability:', availability);
@@ -185,7 +151,7 @@ Key points:
           
           const result = await session.prompt(prompt);
           session.destroy();
-          logTiming('[EXPLAIN] Success (Gemini Nano)', startTime);
+          logTiming('[EXPLAIN] Success', startTime);
           return result;
         } catch (err) {
           console.error('🔴 [EXPLAIN] LanguageModel error:', err.message);
@@ -212,19 +178,19 @@ Key points:
       }
     }
     
-    // Try OpenAI as fallback (if not primary and fallback allowed)
-    if (await shouldUseOpenAI(false, true)) {
+    // Try OpenAI fallback
+    if (await shouldUseOpenAI()) {
       try {
-        console.log('🟢 [EXPLAIN] Trying OpenAI (Fallback Provider)');
+        console.log('🟢 [EXPLAIN] Trying OpenAI fallback');
         const result = await callOpenAI(
           'You are a helpful AI assistant that explains text clearly and concisely.',
           `Explain the following text. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:\n\n"${text.substring(0, 3000)}"`,
           600
         );
-        logTiming('[EXPLAIN] Success (OpenAI Fallback)', startTime);
+        logTiming('[EXPLAIN] Success (OpenAI)', startTime);
         return result;
       } catch (err) {
-        console.error('🔴 [EXPLAIN] OpenAI fallback error:', err.message);
+        console.error('🔴 [EXPLAIN] OpenAI error:', err.message);
       }
     }
     
@@ -246,22 +212,6 @@ async function simplifyText(text) {
   console.log('🟢 [SIMPLIFY] Starting... (text length:', text.length, 'chars)');
   
   try {
-    // Check if OpenAI is the primary provider
-    if (await shouldUseOpenAI(true, false)) {
-      try {
-        console.log('🟢 [SIMPLIFY] Using OpenAI (Primary Provider)');
-        const result = await callOpenAI(
-          'You are a helpful AI assistant that simplifies complex text into easy-to-understand language.',
-          `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand:\n\n"${text.substring(0, 3000)}"`,
-          600
-        );
-        logTiming('[SIMPLIFY] Success (OpenAI Primary)', startTime);
-        return result;
-      } catch (err) {
-        console.error('🔴 [SIMPLIFY] OpenAI primary failed:', err.message);
-      }
-    }
-    
     // Use LanguageModel for better control over simplification
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
@@ -284,7 +234,7 @@ Provide a simplified version that is:
           
           const result = await session.prompt(prompt);
           session.destroy();
-          logTiming('[SIMPLIFY] Success (Gemini Nano)', startTime);
+          logTiming('[SIMPLIFY] Success', startTime);
           return result;
         } catch (err) {
           console.error('🔴 [SIMPLIFY] LanguageModel error:', err.message);
@@ -311,19 +261,19 @@ Provide a simplified version that is:
       }
     }
     
-    // Try OpenAI as fallback
-    if (await shouldUseOpenAI(false, true)) {
+    // Try OpenAI fallback
+    if (await shouldUseOpenAI()) {
       try {
-        console.log('🟢 [SIMPLIFY] Trying OpenAI (Fallback Provider)');
+        console.log('🟢 [SIMPLIFY] Trying OpenAI fallback');
         const result = await callOpenAI(
           'You are a helpful AI assistant that simplifies complex text into easy-to-understand language.',
           `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand:\n\n"${text.substring(0, 3000)}"`,
           600
         );
-        logTiming('[SIMPLIFY] Success (OpenAI Fallback)', startTime);
+        logTiming('[SIMPLIFY] Success (OpenAI)', startTime);
         return result;
       } catch (err) {
-        console.error('🔴 [SIMPLIFY] OpenAI fallback error:', err.message);
+        console.error('🔴 [SIMPLIFY] OpenAI error:', err.message);
       }
     }
     
@@ -393,19 +343,19 @@ async function translateText(text, targetLanguage = 'es') {
       }
     }
     
-    // Try OpenAI as fallback
-    if (await shouldUseOpenAI(false, true)) {
+    // Try OpenAI fallback
+    if (await shouldUseOpenAI()) {
       try {
-        console.log('🟢 [TRANSLATE] Trying OpenAI (Fallback Provider)');
+        console.log('🟢 [TRANSLATE] Trying OpenAI fallback');
         const result = await callOpenAI(
           `You are a professional translator that translates English to ${languageNames[targetLanguage]}.`,
           `Translate the following text to ${languageNames[targetLanguage]}. Only provide the translation, no explanations:\n\n"${text.substring(0, 3000)}"`,
           800
         );
-        logTiming('[TRANSLATE] Success (OpenAI Fallback)', startTime);
+        logTiming('[TRANSLATE] Success (OpenAI)', startTime);
         return result;
       } catch (err) {
-        console.error('🔴 [TRANSLATE] OpenAI fallback error:', err.message);
+        console.error('🔴 [TRANSLATE] OpenAI error:', err.message);
       }
     }
     
@@ -447,19 +397,19 @@ async function proofreadText(text) {
       }
     }
     
-    // Try OpenAI as fallback
-    if (await shouldUseOpenAI(false, true)) {
+    // Try OpenAI fallback
+    if (await shouldUseOpenAI()) {
       try {
-        console.log('🟢 [PROOFREAD] Trying OpenAI (Fallback Provider)');
+        console.log('🟢 [PROOFREAD] Trying OpenAI fallback');
         const result = await callOpenAI(
           'You are a professional proofreader and grammar checker.',
           `Proofread and correct the following text for grammar, spelling, and punctuation errors. Only provide the corrected text, no explanations:\n\n"${text.substring(0, 3000)}"`,
           800
         );
-        logTiming('[PROOFREAD] Success (OpenAI Fallback)', startTime);
+        logTiming('[PROOFREAD] Success (OpenAI)', startTime);
         return result;
       } catch (err) {
-        console.error('🔴 [PROOFREAD] OpenAI fallback error:', err.message);
+        console.error('🔴 [PROOFREAD] OpenAI error:', err.message);
       }
     }
     
@@ -488,22 +438,6 @@ async function promptAI(prompt) {
   console.log('🟠 [PROMPT] Starting... (prompt length:', prompt.length, 'chars)');
   
   try {
-    // Check if OpenAI is the primary provider
-    if (await shouldUseOpenAI(true, false)) {
-      try {
-        console.log('🟢 [PROMPT] Using OpenAI (Primary Provider)');
-        const result = await callOpenAI(
-          'You are a helpful AI assistant that provides clear and accurate answers to questions.',
-          prompt,
-          600
-        );
-        logTiming('[PROMPT] Success (OpenAI Primary)', startTime);
-        return result;
-      } catch (err) {
-        console.error('🔴 [PROMPT] OpenAI primary failed:', err.message);
-      }
-    }
-    
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
       console.log('🟠 [PROMPT] LanguageModel availability:', availability);
@@ -517,7 +451,7 @@ async function promptAI(prompt) {
           });
           const result = await session.prompt(prompt);
           session.destroy();
-          logTiming('[PROMPT] Success (Gemini Nano)', startTime);
+          logTiming('[PROMPT] Success', startTime);
           return result;
         } catch (err) {
           console.error('🔴 [PROMPT] Error:', err.message);
@@ -526,19 +460,19 @@ async function promptAI(prompt) {
       }
     }
     
-    // Try OpenAI as fallback
-    if (await shouldUseOpenAI(false, true)) {
+    // Try OpenAI fallback
+    if (await shouldUseOpenAI()) {
       try {
-        console.log('🟢 [PROMPT] Trying OpenAI (Fallback Provider)');
+        console.log('🟢 [PROMPT] Trying OpenAI fallback');
         const result = await callOpenAI(
           'You are a helpful AI assistant that provides clear and accurate answers to questions.',
           prompt,
           600
         );
-        logTiming('[PROMPT] Success (OpenAI Fallback)', startTime);
+        logTiming('[PROMPT] Success (OpenAI)', startTime);
         return result;
       } catch (err) {
-        console.error('🔴 [PROMPT] OpenAI fallback error:', err.message);
+        console.error('🔴 [PROMPT] OpenAI error:', err.message);
       }
     }
     
