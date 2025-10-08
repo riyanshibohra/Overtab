@@ -478,9 +478,13 @@ async function initializeChat() {
     const contextMessage = createContextMessage();
     addMessageToChat('system', contextMessage);
     
-    // Create AI session with initial context
+    // Create AI session with initial context (only for Gemini Nano)
+    // OpenAI doesn't need a persistent session - it's stateless
     try {
-      if (typeof LanguageModel !== 'undefined') {
+      const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted']);
+      const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+      
+      if (!isPrimaryOpenAI && typeof LanguageModel !== 'undefined') {
         const availability = await LanguageModel.availability();
         if (availability === 'readily' || availability === 'available') {
           chatSession = await LanguageModel.create({
@@ -488,8 +492,10 @@ async function initializeChat() {
             temperature: 0.8,
             topK: 40
           });
-          console.log('✅ Chat session created');
+          console.log('✅ Gemini Nano chat session created');
         }
+      } else if (isPrimaryOpenAI) {
+        console.log('✅ Using OpenAI for chat (no session needed)');
       }
     } catch (error) {
       console.error('Error creating chat session:', error);
@@ -569,18 +575,44 @@ RESPONSE STYLE:
     
     // Get AI response
     let response;
-    const prefs = await chrome.storage.local.get(['primaryProvider', 'fallbackPreference', 'openaiApiKey', 'openaiModel', 'openaiTemperature']);
-    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && prefs.openaiApiKey;
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'fallbackPreference', 'openaiApiKey', 'openaiKeyEncrypted', 'openaiModel', 'openaiTemperature']);
+    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+    
+    // Get the actual API key (might be encrypted)
+    let openaiApiKey = prefs.openaiApiKey || null;
+    if (!openaiApiKey && prefs.openaiKeyEncrypted) {
+      try {
+        const session = await chrome.storage.session.get(['encryptionPasscode']);
+        if (session.encryptionPasscode) {
+          openaiApiKey = await decryptTextWithPasscode(prefs.openaiKeyEncrypted, session.encryptionPasscode);
+          console.log('💬 [CHAT] Successfully decrypted OpenAI API key');
+        } else {
+          console.warn('💬 [CHAT] OpenAI key is locked - passcode not available');
+        }
+      } catch (err) {
+        console.error('💬 [CHAT] Error decrypting OpenAI key:', err);
+      }
+    }
+    
+    // If OpenAI is primary but key is not available, show helpful error
+    if (isPrimaryOpenAI && !openaiApiKey) {
+      removeMessage(loadingId);
+      addMessageToChat('assistant', '🔒 OpenAI API key is locked. Please unlock it in the settings or use the extension popup to unlock.');
+      input.disabled = false;
+      document.getElementById('chat-send-btn').disabled = false;
+      input.focus();
+      return;
+    }
     
     // Try OpenAI first if it's the primary provider
-    if (isPrimaryOpenAI && !response) {
+    if (isPrimaryOpenAI && !response && openaiApiKey) {
       try {
         console.log('💬 [CHAT] Using OpenAI (Primary Provider)');
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${prefs.openaiApiKey}`
+            'Authorization': `Bearer ${openaiApiKey}`
           },
           body: JSON.stringify({
             model: prefs.openaiModel || 'gpt-4o-mini',
@@ -633,14 +665,14 @@ RESPONSE STYLE:
     }
     
     // Try OpenAI as fallback if Gemini Nano failed and fallback is allowed
-    if (!response && !isPrimaryOpenAI && prefs.fallbackPreference === 'try-other' && prefs.openaiApiKey) {
+    if (!response && !isPrimaryOpenAI && prefs.fallbackPreference === 'try-other' && openaiApiKey) {
       try {
         console.log('💬 [CHAT] Using OpenAI (Fallback Provider)');
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${prefs.openaiApiKey}`
+            'Authorization': `Bearer ${openaiApiKey}`
           },
           body: JSON.stringify({
             model: prefs.openaiModel || 'gpt-4o-mini',
