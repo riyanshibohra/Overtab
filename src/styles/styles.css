@@ -1788,7 +1788,7 @@ body {
   gap: 12px;
   width: 100%;
   max-width: 400px;
-  margin-top: 8px;
+  margin: 0 auto;
 }
 
 .links-search-label {

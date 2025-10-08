@@ -928,16 +928,26 @@ async function generateSimilarLinksForPage(customTopic = '') {
       console.log('🔗 Generating links for page:', { pageTitle, pageDescription, pageUrl });
     }
     
+    // Validate we have a topic
+    if (!pageTitle || pageTitle.trim() === '') {
+      throw new Error('Please enter a topic to find links about.');
+    }
+    
     // Generate similar links using AI (function from ai-helper.js)
     const aiResponse = await generateSimilarLinks(pageTitle, pageDescription, pageUrl);
     
     console.log('🔗 AI Response:', aiResponse);
     
+    // Validate AI response
+    if (!aiResponse || aiResponse.trim() === '') {
+      throw new Error('No response from AI. Please try again.');
+    }
+    
     // Parse the response
     const links = parseSimilarLinksResponse(aiResponse);
     
     if (links.length === 0) {
-      throw new Error('No links were generated. Please try again.');
+      throw new Error('Could not parse links from response. Please try again with a different topic.');
     }
     
     // Display the links
@@ -953,20 +963,25 @@ function parseSimilarLinksResponse(response) {
   const links = [];
   const lines = response.split('\n').filter(line => line.trim().length > 0);
   
+  console.log('🔗 Parsing response, found', lines.length, 'lines');
+  
   for (const line of lines) {
     // Skip demo mode prefix if present
-    if (line.startsWith('Demo mode:')) continue;
+    if (line.toLowerCase().includes('demo mode')) continue;
     
     // Try to parse the line as TITLE|||URL|||DESCRIPTION
     const parts = line.split('|||');
-    if (parts.length === 3) {
+    if (parts.length >= 3) {
       const title = parts[0].trim().replace(/^\d+\.\s*/, ''); // Remove numbering if present
       const url = parts[1].trim();
       const description = parts[2].trim();
       
-      // Validate URL
-      if (url.startsWith('http://') || url.startsWith('https://')) {
+      // Validate URL - be more lenient
+      if (title && url && (url.startsWith('http://') || url.startsWith('https://'))) {
         links.push({ title, url, description });
+        console.log('✅ Parsed link:', title);
+      } else {
+        console.log('❌ Invalid link format:', line.substring(0, 50));
       }
     } else {
       // Try to parse markdown-style links or other formats
@@ -979,11 +994,15 @@ function parseSimilarLinksResponse(response) {
         
         if (url.startsWith('http://') || url.startsWith('https://')) {
           links.push({ title, url, description });
+          console.log('✅ Parsed markdown link:', title);
         }
+      } else {
+        console.log('⚠️ Could not parse line:', line.substring(0, 50));
       }
     }
   }
   
+  console.log('🔗 Total links parsed:', links.length);
   return links;
 }
 
@@ -1033,20 +1052,25 @@ function showLinksError(message) {
   document.getElementById('links-display').classList.add('hidden');
   
   emptyState.innerHTML = `
-    <div class="empty-icon">⚠️</div>
-    <h2>Error</h2>
-    <p>${escapeHtml(message)}</p>
-    <div class="links-search-container">
-      <label for="links-topic-input" class="links-search-label">What would you like to find links about?</label>
-      <input 
-        type="text" 
-        id="links-topic-input" 
-        class="links-topic-input" 
-        placeholder="E.g., Machine Learning, React Tutorial, Climate Change..."
-      />
-      <button id="generate-links-btn" class="generate-links-btn">
-        🔄 Try Again
-      </button>
+    <div class="empty-state-content">
+      <div class="empty-icon">⚠️</div>
+      <h2>Error</h2>
+      <p class="empty-subtitle">${escapeHtml(message)}</p>
+      
+      <div class="empty-divider"></div>
+      
+      <div class="links-search-container">
+        <label for="links-topic-input" class="links-search-label">What would you like to find links about?</label>
+        <input 
+          type="text" 
+          id="links-topic-input" 
+          class="links-topic-input" 
+          placeholder="E.g., Machine Learning, React Tutorial, Climate Change..."
+        />
+        <button id="generate-links-btn" class="generate-links-btn">
+          🔄 Try Again
+        </button>
+      </div>
     </div>
   `;
   
