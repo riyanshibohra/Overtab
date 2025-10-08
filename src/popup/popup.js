@@ -306,51 +306,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusIcon = document.querySelector('.status-indicator img');
     const statusText = document.getElementById('ai-status-text');
     const statusLabel = document.getElementById('ai-status-label');
-    const hasOpenAIKey = !!(prefs.openaiApiKey || prefs.openaiKeyEncrypted);
-
-    // If user prefers OpenAI and key is present
-    if (prefs.primaryProvider === 'openai' && hasOpenAIKey) {
+    
+    // Check if user has chosen OpenAI as primary
+    if (prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted)) {
       statusIcon.src = '../../icons/openai-logo.png';
       statusIcon.alt = 'OpenAI';
       statusText.textContent = 'Using OpenAI API';
       statusLabel.textContent = 'CLOUD AI';
       statusLabel.style.background = '#e3f2fd';
       statusLabel.style.color = '#1976d2';
-      return;
-    }
-
-    // Otherwise, check Gemini availability
-    let geminiAvailable = false;
-    try {
-      if (typeof LanguageModel !== 'undefined') {
-        const availability = await LanguageModel.availability();
-        geminiAvailable = (availability === 'readily' || availability === 'available');
-      }
-    } catch (e) {}
-
-    if (geminiAvailable) {
+    } else {
+      // Default to Gemini Nano or show it if available
       statusIcon.src = '../../icons/gemini-logo.png';
       statusIcon.alt = 'Gemini';
       statusText.textContent = 'Powered by Gemini Nano';
       statusLabel.textContent = 'ON-DEVICE';
       statusLabel.style.background = '#e6f4ea';
       statusLabel.style.color = '#34a853';
-    } else if (hasOpenAIKey) {
-      // Gemini not available, but OpenAI key present
-      statusIcon.src = '../../icons/openai-logo.png';
-      statusIcon.alt = 'OpenAI';
-      statusText.textContent = 'OpenAI API Ready';
-      statusLabel.textContent = 'CLOUD AI';
-      statusLabel.style.background = '#e3f2fd';
-      statusLabel.style.color = '#1976d2';
-    } else {
-      // First-time / no providers configured
-      statusIcon.src = '../../icons/gemini-logo.png';
-      statusIcon.alt = 'Setup';
-      statusText.textContent = 'Set up AI';
-      statusLabel.textContent = 'SETUP';
-      statusLabel.style.background = '#eceff1';
-      statusLabel.style.color = '#546e7a';
     }
   }
 
@@ -387,17 +359,10 @@ document.addEventListener('DOMContentLoaded', function() {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local') {
       // If primaryProvider or openaiApiKey changed, update the badge immediately
-      if (changes.primaryProvider || changes.openaiApiKey || changes.openaiKeyEncrypted) {
+      if (changes.primaryProvider || changes.openaiApiKey) {
         updateAIStatusBadge();
       }
     }
-  });
-
-  // Clicking the status badge opens Settings (useful for first-time setup)
-  document.querySelector('.status-badge').addEventListener('click', async () => {
-    settingsModal.classList.remove('hidden');
-    await loadSettings();
-    await checkGeminiStatus();
   });
 
 });
