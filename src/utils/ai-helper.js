@@ -249,6 +249,45 @@ async function translateText(text, targetLanguage = 'es') {
   }
 }
 
+// Proofreader API - Grammar and spelling corrections (SPECIALIZED API)
+async function proofreadText(text) {
+  const startTime = Date.now();
+  console.log('✅ [PROOFREAD] Starting... (text length:', text.length, 'chars)');
+  
+  try {
+    // Use Proofreader API (specialized for grammar checking)
+    if (typeof Proofreader !== 'undefined') {
+      const availability = await Proofreader.availability();
+      console.log('✅ [PROOFREAD] Proofreader API availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        console.log('✅ [PROOFREAD] Proofreader ready, checking grammar...');
+        const proofreader = await Proofreader.create();
+        const result = await proofreader.proofread(text);
+        proofreader.destroy();
+        logTiming('[PROOFREAD] Success', startTime);
+        
+        // Return the corrected text from the API response
+        return result.correctedInput || text;
+      } else {
+        console.error('🔴 [PROOFREAD] API not available:', availability);
+        throw new Error('Proofreader API is not available');
+      }
+    }
+    
+    // Demo mode fallback
+    console.log('🟡 [PROOFREAD] Using demo mode (API not available)');
+    await simulateDelay();
+    
+    const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
+    return `✅ DEMO MODE - Proofread:\n\n"${preview}"\n\nIn production, this would use Chrome's Proofreader API with Gemini Nano to automatically correct grammar, spelling, and punctuation errors while maintaining your privacy.\n\n✨ Real grammar checking will be available when Chrome Built-in AI APIs become available.`;
+    
+  } catch (error) {
+    console.error('🔴 [PROOFREAD] Error:', error);
+    throw error;
+  }
+}
+
 // Simulate AI processing delay
 function simulateDelay() {
   const delay = 500 + Math.random() * 1000;

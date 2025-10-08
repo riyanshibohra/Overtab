@@ -138,6 +138,7 @@ function showLoadingState(actionType = 'explain') {
     'explain': 'Analyzing text...',
     'simplify': 'Simplifying...',
     'translate': 'Translating...',
+    'proofread': 'Checking grammar...',
     'describe': 'Analyzing image...'
   };
   
@@ -234,6 +235,7 @@ async function displayAIResult(sourceText, resultType, result) {
   document.getElementById('explanation-section').classList.add('hidden');
   document.getElementById('simplified-section').classList.add('hidden');
   document.getElementById('translation-section').classList.add('hidden');
+  document.getElementById('proofread-section').classList.add('hidden');
   
   if (resultType === 'explanation') {
     const formattedResult = formatAIResult(result);
@@ -253,6 +255,15 @@ async function displayAIResult(sourceText, resultType, result) {
       .replace(/\n/g, '<br>');
     document.getElementById('translation-content').innerHTML = translationHTML;
     document.getElementById('translation-section').classList.remove('hidden');
+  } else if (resultType === 'proofread') {
+    // For proofreading: show corrected text with basic formatting
+    const proofreadHTML = result
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    document.getElementById('proofread-content').innerHTML = proofreadHTML;
+    document.getElementById('proofread-section').classList.remove('hidden');
   }
   
   showResultDisplay();

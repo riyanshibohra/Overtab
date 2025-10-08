@@ -83,6 +83,10 @@ function showTooltip(selectionRect) {
         <button class="lang-option" data-action="translate" data-lang="hi">🇮🇳 Hindi</button>
       </div>
     </div>
+    <button class="overtab-tooltip-btn" data-action="proofread">
+      <span class="tooltip-btn-icon">✅</span>
+      <span class="tooltip-btn-text">Proofread</span>
+    </button>
   `;
   
   document.body.appendChild(tooltip);
@@ -192,6 +196,14 @@ async function handleAction(action, language = null) {
         resultType: 'translation',
         result: result,
         targetLanguage: targetLang
+      });
+    } else if (action === 'proofread') {
+      result = await proofreadText(text);
+      chrome.runtime.sendMessage({
+        action: 'showResult',
+        sourceText: text,
+        resultType: 'proofread',
+        result: result
       });
     }
     
