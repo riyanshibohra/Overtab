@@ -1,5 +1,14 @@
 // Overtab Sidebar Script
 
+// Chat state management
+let chatSession = null;
+let chatContext = {
+  sourceText: '',
+  resultType: '',
+  result: ''
+};
+let chatHistory = [];
+
 document.addEventListener('DOMContentLoaded', function() {
   
   // Check session storage for initial state
@@ -109,6 +118,59 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Continue conversation button
+  const continueConversationBtn = document.getElementById('continue-conversation-btn');
+  if (continueConversationBtn) {
+    continueConversationBtn.addEventListener('click', function() {
+      initializeChat();
+      switchToTab('chat');
+    });
+  }
+  
+  // Chat input handling
+  const chatInput = document.getElementById('chat-input');
+  const chatSendBtn = document.getElementById('chat-send-btn');
+  
+  if (chatInput) {
+    // Auto-resize textarea
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+    
+    // Send on Enter (Shift+Enter for new line)
+    chatInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendChatMessage();
+      }
+    });
+  }
+  
+  if (chatSendBtn) {
+    chatSendBtn.addEventListener('click', sendChatMessage);
+  }
+  
+  // Chat action buttons
+  const chatClearBtn = document.getElementById('chat-clear-btn');
+  const chatNewBtn = document.getElementById('chat-new-btn');
+  
+  if (chatClearBtn) {
+    chatClearBtn.addEventListener('click', function() {
+      if (confirm('Clear this conversation?')) {
+        clearChat();
+      }
+    });
+  }
+  
+  if (chatNewBtn) {
+    chatNewBtn.addEventListener('click', function() {
+      if (confirm('Start a new conversation? Current context will be cleared.')) {
+        resetChat();
+      }
+    });
+  }
+  
   // Listen for messages
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
@@ -177,6 +239,9 @@ async function clearHistoryStorage() {
 function formatAIResult(text) {
   if (!text) return '';
   
+  // Remove markdown headers (##, ###, etc.) - replace with plain text
+  text = text.replace(/^#+\s+/gm, '');
+  
   // Split into lines first (before any replacements)
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   
@@ -232,6 +297,9 @@ function formatAIResult(text) {
 async function displayAIResult(sourceText, resultType, result) {
   document.getElementById('result-source-text').textContent = sourceText;
   
+  // Store context for chat
+  chatContext = { sourceText, resultType, result };
+  
   document.getElementById('explanation-section').classList.add('hidden');
   document.getElementById('simplified-section').classList.add('hidden');
   document.getElementById('translation-section').classList.add('hidden');
@@ -267,6 +335,9 @@ async function displayAIResult(sourceText, resultType, result) {
   }
   
   showResultDisplay();
+  
+  // Show "Continue conversation" button
+  document.getElementById('continue-conversation-container').classList.remove('hidden');
   
   document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.sidebar-tab-content').forEach(tc => tc.classList.remove('active'));
@@ -362,4 +433,245 @@ function showToast(message, duration = 2000) {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   }, duration);
+}
+
+// Chat functionality
+function switchToTab(tabName) {
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-tab-content').forEach(tc => tc.classList.remove('active'));
+  
+  const tabButton = document.querySelector(`.sidebar-tab[data-tab="${tabName}"]`);
+  const tabContent = document.getElementById(`${tabName}-tab`);
+  
+  if (tabButton && tabContent) {
+    tabButton.classList.add('active');
+    tabContent.classList.add('active');
+  }
+}
+
+async function initializeChat() {
+  console.log('💬 Initializing chat with context:', chatContext);
+  
+  // Show chat interface
+  document.getElementById('chat-empty-state').classList.add('hidden');
+  document.getElementById('chat-messages-container').classList.remove('hidden');
+  document.getElementById('chat-input-container').classList.remove('hidden');
+  
+  // If this is first time opening chat with this context, add context message
+  if (chatHistory.length === 0 && chatContext.result) {
+    const contextMessage = createContextMessage();
+    addMessageToChat('system', contextMessage);
+    
+    // Create AI session with initial context
+    try {
+      if (typeof LanguageModel !== 'undefined') {
+        const availability = await LanguageModel.availability();
+        if (availability === 'readily' || availability === 'available') {
+          chatSession = await LanguageModel.create({
+            temperature: 0.8,
+            topK: 40
+          });
+          console.log('✅ Chat session created');
+        }
+      }
+    } catch (error) {
+      console.error('Error creating chat session:', error);
+    }
+  }
+  
+  // Focus input
+  document.getElementById('chat-input').focus();
+}
+
+function createContextMessage() {
+  const actionLabels = {
+    'explanation': 'explained',
+    'simplified': 'simplified',
+    'translation': 'translated',
+    'proofread': 'proofread'
+  };
+  
+  const action = actionLabels[chatContext.resultType] || 'analyzed';
+  const preview = chatContext.sourceText.substring(0, 80);
+  
+  return `I've ${action} the following text for you:\n\n"${preview}${chatContext.sourceText.length > 80 ? '...' : ''}"\n\nFeel free to ask me follow-up questions, request clarifications, or explore related topics!`;
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  
+  if (!message) return;
+  
+  // Add user message to chat
+  addMessageToChat('user', message);
+  input.value = '';
+  input.style.height = 'auto';
+  
+  // Disable input while processing
+  input.disabled = true;
+  document.getElementById('chat-send-btn').disabled = true;
+  
+  // Add loading indicator
+  const loadingId = addMessageToChat('assistant', '...');
+  
+  try {
+    // Build conversation context
+    const systemPrompt = `You are a helpful AI assistant. The user previously asked you to ${chatContext.resultType} some text. Here's the context:
+
+Original text: "${chatContext.sourceText.substring(0, 300)}${chatContext.sourceText.length > 300 ? '...' : ''}"
+
+Your previous ${chatContext.resultType}: "${chatContext.result.substring(0, 300)}${chatContext.result.length > 300 ? '...' : ''}"
+
+CRITICAL: Keep responses VERY SHORT. Maximum 2-3 sentences OR 3 bullet points. Be concise and direct. No long explanations or extensive details.`;
+
+    // Build full prompt with history
+    let fullPrompt = systemPrompt + '\n\n';
+    
+    // Add recent chat history (last 5 exchanges)
+    const recentHistory = chatHistory.slice(-10);
+    recentHistory.forEach(msg => {
+      if (msg.role === 'user') {
+        fullPrompt += `User: ${msg.text}\n\n`;
+      } else if (msg.role === 'assistant') {
+        fullPrompt += `Assistant: ${msg.text}\n\n`;
+      }
+    });
+    
+    fullPrompt += `User: ${message}\n\nAssistant:`;
+    
+    // Get AI response
+    let response;
+    
+    if (chatSession) {
+      // Use persistent session
+      response = await chatSession.prompt(message);
+    } else if (typeof LanguageModel !== 'undefined') {
+      // Create new session
+      const availability = await LanguageModel.availability();
+      if (availability === 'readily' || availability === 'available') {
+        const tempSession = await LanguageModel.create({
+          temperature: 0.8,
+          topK: 40
+        });
+        response = await tempSession.prompt(fullPrompt);
+        tempSession.destroy();
+      } else {
+        throw new Error('Language model not available');
+      }
+    } else {
+      throw new Error('LanguageModel API not available');
+    }
+    
+    // Remove loading indicator and add real response
+    removeMessage(loadingId);
+    addMessageToChat('assistant', response);
+    
+    // Store in history
+    chatHistory.push({ role: 'user', text: message });
+    chatHistory.push({ role: 'assistant', text: response });
+    
+  } catch (error) {
+    console.error('Chat error:', error);
+    removeMessage(loadingId);
+    addMessageToChat('assistant', '❌ Sorry, I encountered an error. Please try again or start a new conversation.');
+  } finally {
+    input.disabled = false;
+    document.getElementById('chat-send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+function addMessageToChat(role, text) {
+  const messagesContainer = document.getElementById('chat-messages');
+  const messageId = 'msg-' + Date.now();
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.id = messageId;
+  messageDiv.className = `chat-message chat-message-${role}`;
+  
+  if (role === 'system') {
+    messageDiv.innerHTML = `
+      <div class="chat-message-content chat-message-system">
+        <div class="chat-system-icon">💬</div>
+        <div class="chat-system-text">${escapeHtml(text).replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+  } else if (role === 'user') {
+    messageDiv.innerHTML = `
+      <div class="chat-message-content">
+        <div class="chat-message-avatar">👤</div>
+        <div class="chat-message-text">${escapeHtml(text).replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+  } else if (role === 'assistant') {
+    const formattedText = text === '...' ? '<div class="chat-loading-dots"><span></span><span></span><span></span></div>' : formatAIResult(text);
+    messageDiv.innerHTML = `
+      <div class="chat-message-content">
+        <div class="chat-message-avatar">🤖</div>
+        <div class="chat-message-text">${formattedText}</div>
+      </div>
+    `;
+  }
+  
+  messagesContainer.appendChild(messageDiv);
+  
+  // Scroll to bottom
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  
+  return messageId;
+}
+
+function removeMessage(messageId) {
+  const message = document.getElementById(messageId);
+  if (message) {
+    message.remove();
+  }
+}
+
+function clearChat() {
+  const messagesContainer = document.getElementById('chat-messages');
+  messagesContainer.innerHTML = '';
+  chatHistory = [];
+  
+  // Re-add context message
+  if (chatContext.result) {
+    const contextMessage = createContextMessage();
+    addMessageToChat('system', contextMessage);
+  }
+  
+  showToast('💬 Conversation cleared');
+}
+
+function resetChat() {
+  // Clear everything
+  const messagesContainer = document.getElementById('chat-messages');
+  messagesContainer.innerHTML = '';
+  chatHistory = [];
+  
+  // Destroy session
+  if (chatSession) {
+    try {
+      chatSession.destroy();
+    } catch (e) {
+      console.log('Session already destroyed');
+    }
+    chatSession = null;
+  }
+  
+  // Clear context
+  chatContext = { sourceText: '', resultType: '', result: '' };
+  
+  // Show empty state
+  document.getElementById('chat-empty-state').classList.remove('hidden');
+  document.getElementById('chat-messages-container').classList.add('hidden');
+  document.getElementById('chat-input-container').classList.add('hidden');
+  
+  showToast('✨ Chat reset');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }

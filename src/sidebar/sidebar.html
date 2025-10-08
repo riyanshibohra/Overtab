@@ -30,6 +30,10 @@
         <span class="tab-icon">📄</span>
         <span class="tab-label">Result</span>
       </button>
+      <button class="sidebar-tab" data-tab="chat">
+        <span class="tab-icon">💬</span>
+        <span class="tab-label">Chat</span>
+      </button>
       <button class="sidebar-tab" data-tab="history">
         <span class="tab-icon">📜</span>
         <span class="tab-label">History</span>
@@ -69,6 +73,13 @@
 
         <div id="result-display" class="sidebar-result-display hidden">
           
+          <!-- Continue conversation button -->
+          <div class="continue-conversation-container hidden" id="continue-conversation-container">
+            <button class="continue-conversation-btn" id="continue-conversation-btn">
+              💬 Continue this conversation
+            </button>
+          </div>
+
           <!-- Results shown first -->
           <div class="result-sections">
             
@@ -127,6 +138,57 @@
             <div class="result-source-content" id="source-content">
               <span id="result-source-text" class="result-source-text">Selected text will appear here</span>
             </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="chat-tab" class="sidebar-tab-content">
+        
+        <div id="chat-empty-state" class="chat-empty-state">
+          <div class="empty-icon">💬</div>
+          <h2>Start a Conversation</h2>
+          <p>Get a result first, then click "Continue conversation" to chat with AI about it.</p>
+          <div class="empty-state-tips">
+            <p><strong>You can ask:</strong></p>
+            <p>• Follow-up questions</p>
+            <p>• Clarifications</p>
+            <p>• Related topics</p>
+            <p>• Examples or explanations</p>
+          </div>
+        </div>
+
+        <div id="chat-messages-container" class="chat-messages-container hidden">
+          <div id="chat-context-badge" class="chat-context-badge">
+            <span class="context-icon">🎯</span>
+            <span class="context-text">Context loaded</span>
+          </div>
+          
+          <div id="chat-messages" class="chat-messages">
+            <!-- Messages will be inserted here -->
+          </div>
+        </div>
+
+        <div id="chat-input-container" class="chat-input-container hidden">
+          <div class="chat-input-wrapper">
+            <textarea 
+              id="chat-input" 
+              class="chat-input" 
+              placeholder="Ask a follow-up question..." 
+              rows="1"></textarea>
+            <button id="chat-send-btn" class="chat-send-btn" title="Send message">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M2 10L18 2L10 18L8 11L2 10Z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+          <div class="chat-actions">
+            <button id="chat-clear-btn" class="chat-action-btn" title="Clear conversation">
+              🗑️ Clear
+            </button>
+            <button id="chat-new-btn" class="chat-action-btn" title="Start fresh">
+              ✨ New Chat
+            </button>
           </div>
         </div>
 
