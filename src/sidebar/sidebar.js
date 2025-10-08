@@ -468,6 +468,7 @@ async function initializeChat() {
         const availability = await LanguageModel.availability();
         if (availability === 'readily' || availability === 'available') {
           chatSession = await LanguageModel.create({
+            language: 'en',
             temperature: 0.8,
             topK: 40
           });
@@ -556,6 +557,7 @@ IMPORTANT:
         const availability = await LanguageModel.availability();
         if (availability === 'readily' || availability === 'available') {
           const tempSession = await LanguageModel.create({
+            language: 'en',
             temperature: 0.8,
             topK: 40
           });

@@ -115,7 +115,9 @@ async function explainText(text) {
       
       if (availability === 'readily' || availability === 'available') {
         try {
-          const session = await LanguageModel.create();
+          const session = await LanguageModel.create({
+            language: 'en'
+          });
           const prompt = `Explain the following text clearly and concisely. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:
 
 "${text}"
@@ -196,7 +198,9 @@ async function simplifyText(text) {
       
       if (availability === 'readily' || availability === 'available') {
         try {
-          const session = await LanguageModel.create();
+          const session = await LanguageModel.create({
+            language: 'en'
+          });
           const prompt = `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand. Break down complex concepts into clear, short sentences. Avoid jargon and technical terms.
 
 "${text}"
@@ -414,6 +418,7 @@ async function promptAI(prompt) {
       if (availability === 'readily' || availability === 'available') {
         try {
           const session = await LanguageModel.create({
+            language: 'en',
             temperature: 0.7,
             topK: 40
           });
