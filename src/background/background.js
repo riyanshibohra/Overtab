@@ -1,6 +1,9 @@
 // Overtab Background Service Worker
 // Handles context menus, sidebar management, and inter-component communication
 
+// Import AI helper for processing AI requests
+importScripts('../utils/ai-helper.js');
+
 console.log('Overtab service worker initialized');
 
 // Create context menu for image descriptions
@@ -74,6 +77,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       return true;
     }
+  }
+  
+  // Handle AI processing requests (from content scripts that don't have storage access)
+  if (message.action === 'processAI') {
+    (async () => {
+      try {
+        let result;
+        const { aiFunction, text, targetLanguage } = message;
+        
+        switch (aiFunction) {
+          case 'explain':
+            result = await explainText(text);
+            break;
+          case 'simplify':
+            result = await simplifyText(text);
+            break;
+          case 'translate':
+            result = await translateText(text, targetLanguage);
+            break;
+          case 'proofread':
+            result = await proofreadText(text);
+            break;
+          case 'prompt':
+            result = await promptAI(text);
+            break;
+          default:
+            throw new Error(`Unknown AI function: ${aiFunction}`);
+        }
+        
+        sendResponse({ success: true, result });
+      } catch (error) {
+        console.error('[Background] AI processing error:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true; // Keep channel open for async response
   }
   
   // Forward result messages to sidebar

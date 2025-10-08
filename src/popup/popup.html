@@ -69,7 +69,7 @@
       <span class="toggle-hint">Disable to prevent interruptions</span>
     </div>
 
-    <div class="status-badge">
+    <div class="status-badge" id="status-badge-container">
       <div class="status-badge-content">
         <div class="status-indicator">
           <img src="../../icons/gemini-logo.png" alt="Gemini" />
@@ -77,8 +77,24 @@
         <span class="status-text" id="ai-status-text">Powered by Gemini Nano</span>
       </div>
       <span class="status-badge-label" id="ai-status-label">On-Device AI</span>
+      <!-- Unlock button (shown inline when locked) -->
+      <button id="unlock-btn" class="unlock-btn-inline hidden">🔓 Unlock</button>
     </div>
 
+  </div>
+
+  <!-- Unlock Modal (simple passcode entry) -->
+  <div id="unlock-modal" class="unlock-modal hidden">
+    <div class="unlock-modal-content">
+      <h3> Activate Key</h3>
+      <p>Enter your passcode</p>
+      <input type="password" id="unlock-passcode-input" placeholder="Enter passcode" class="unlock-input" />
+      <div class="unlock-actions">
+        <button id="unlock-submit-btn" class="unlock-submit-btn">Unlock</button>
+        <button id="unlock-cancel-btn" class="unlock-cancel-btn">Cancel</button>
+      </div>
+      <span id="unlock-error" class="unlock-error"></span>
+    </div>
   </div>
 
   <!-- Settings Modal -->

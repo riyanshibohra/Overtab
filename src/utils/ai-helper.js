@@ -113,11 +113,19 @@ async function shouldUseOpenAI() {
 async function callOpenAI(systemPrompt, userPrompt, maxTokens = 500) {
   const settings = await getOpenAISettings();
   
+  console.log('🔍 [OpenAI] Getting settings:', {
+    hasApiKey: !!settings.apiKey,
+    model: settings.model,
+    temp: settings.temperature
+  });
+  
   if (!settings.apiKey) {
+    console.error('❌ [OpenAI] No API key found after decryption');
     throw new Error('OpenAI API key not configured. Please add your API key in settings.');
   }
   
   try {
+    console.log('🌐 [OpenAI] Making API call...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -197,6 +205,33 @@ async function explainText(text) {
   console.log('🔵 [EXPLAIN] Starting... (text length:', text.length, 'chars)');
   
   try {
+    // Respect primary provider = OpenAI
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted', 'fallbackPreference']);
+    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+    if (isPrimaryOpenAI) {
+      try {
+        console.log('🟢 [EXPLAIN] Using OpenAI (Primary Provider)');
+        const result = await callOpenAI(
+          'You are a helpful AI assistant that explains text clearly and concisely.',
+          `Explain the following text. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:\n\n"${text.substring(0, 3000)}"`,
+          600
+        );
+        logTiming('[EXPLAIN] Success (OpenAI Primary)', startTime);
+        return result;
+      } catch (err) {
+        console.error('🔴 [EXPLAIN] OpenAI primary error:', err.message);
+        const fallbackPref = prefs.fallbackPreference || 'try-other';
+        if (fallbackPref === 'demo-only') {
+          console.log('[EXPLAIN] Fallback set to demo-only, using demo output');
+          await simulateDelay();
+          return demoResponse('explain', { text });
+        } else if (fallbackPref === 'fail') {
+          throw new Error('OpenAI API key is locked. Please unlock it in settings.');
+        }
+        // else fall through to try Gemini Nano
+      }
+    }
+    
     // Try LanguageModel first for better formatted output
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
@@ -248,7 +283,7 @@ Key points:
       }
     }
     
-    // Try OpenAI fallback
+    // Try OpenAI fallback (only if fallback allows it)
     if (await shouldUseOpenAI()) {
       try {
         console.log('🟢 [EXPLAIN] Trying OpenAI fallback');
@@ -280,6 +315,38 @@ async function simplifyText(text) {
   console.log('🟢 [SIMPLIFY] Starting... (text length:', text.length, 'chars)');
   
   try {
+    // Check if OpenAI is the primary provider
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted', 'fallbackPreference']);
+    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+    
+    // Try OpenAI first if it's the primary provider
+    if (isPrimaryOpenAI) {
+      try {
+        console.log('🟢 [SIMPLIFY] Using OpenAI (Primary Provider)');
+        const result = await callOpenAI(
+          'You are a helpful AI assistant that simplifies complex text into easy-to-understand language.',
+          `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand:\n\n"${text.substring(0, 3000)}"`,
+          600
+        );
+        logTiming('[SIMPLIFY] Success (OpenAI Primary)', startTime);
+        return result;
+      } catch (err) {
+        console.error('🔴 [SIMPLIFY] OpenAI primary error:', err.message);
+        
+        // Check fallback preference
+        const fallbackPref = prefs.fallbackPreference || 'try-other';
+        if (fallbackPref === 'demo-only') {
+          console.log('[SIMPLIFY] Fallback set to demo-only, skipping other AI');
+          console.log('[SIMPLIFY] Using demo mode');
+          await simulateDelay();
+          return demoResponse('simplify', { text });
+        } else if (fallbackPref === 'fail') {
+          throw new Error('OpenAI API key is locked. Please unlock it in settings.');
+        }
+        // If 'try-other', fall through to try Gemini Nano
+      }
+    }
+    
     // Use LanguageModel for better control over simplification
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
@@ -534,6 +601,33 @@ async function promptAI(prompt) {
   console.log('🟠 [PROMPT] Starting... (prompt length:', prompt.length, 'chars)');
   
   try {
+    // Respect primary provider = OpenAI
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted', 'fallbackPreference']);
+    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+    if (isPrimaryOpenAI) {
+      try {
+        console.log('🟢 [PROMPT] Using OpenAI (Primary Provider)');
+        const result = await callOpenAI(
+          'You are a helpful AI assistant that provides clear and accurate answers to questions.',
+          prompt,
+          600
+        );
+        logTiming('[PROMPT] Success (OpenAI Primary)', startTime);
+        return result;
+      } catch (err) {
+        console.error('🔴 [PROMPT] OpenAI primary error:', err.message);
+        const fallbackPref = prefs.fallbackPreference || 'try-other';
+        if (fallbackPref === 'demo-only') {
+          console.log('[PROMPT] Fallback set to demo-only, using demo');
+          await simulateDelay();
+          return demoResponse('prompt', { prompt });
+        } else if (fallbackPref === 'fail') {
+          throw new Error('OpenAI API key is locked. Please unlock it in settings.');
+        }
+        // else fall through to Gemini Nano
+      }
+    }
+    
     if (typeof LanguageModel !== 'undefined') {
       const availability = await LanguageModel.availability();
       console.log('🟠 [PROMPT] LanguageModel availability:', availability);

@@ -170,41 +170,82 @@ async function handleAction(action, language = null) {
     let result;
     
     if (action === 'explain') {
-      result = await explainText(text);
-      chrome.runtime.sendMessage({
-        action: 'showResult',
-        sourceText: text,
-        resultType: 'explanation',
-        result: result
+      const response = await chrome.runtime.sendMessage({
+        action: 'processAI',
+        aiFunction: 'explain',
+        text: text
       });
+      
+      if (response.success) {
+        result = response.result;
+        chrome.runtime.sendMessage({
+          action: 'showResult',
+          sourceText: text,
+          resultType: 'explanation',
+          result: result
+        });
+      } else {
+        throw new Error(response.error || 'AI processing failed');
+      }
     } else if (action === 'simplify') {
-      result = await simplifyText(text);
-      chrome.runtime.sendMessage({
-        action: 'showResult',
-        sourceText: text,
-        resultType: 'simplified',
-        result: result
+      const response = await chrome.runtime.sendMessage({
+        action: 'processAI',
+        aiFunction: 'simplify',
+        text: text
       });
+      
+      if (response.success) {
+        result = response.result;
+        chrome.runtime.sendMessage({
+          action: 'showResult',
+          sourceText: text,
+          resultType: 'simplified',
+          result: result
+        });
+      } else {
+        throw new Error(response.error || 'AI processing failed');
+      }
     } else if (action === 'translate') {
       // Use selected language or default to Spanish
       const targetLang = language || 'es';
       
-      result = await translateText(text, targetLang);
-      chrome.runtime.sendMessage({
-        action: 'showResult',
-        sourceText: text,
-        resultType: 'translation',
-        result: result,
+      const response = await chrome.runtime.sendMessage({
+        action: 'processAI',
+        aiFunction: 'translate',
+        text: text,
         targetLanguage: targetLang
       });
+      
+      if (response.success) {
+        result = response.result;
+        chrome.runtime.sendMessage({
+          action: 'showResult',
+          sourceText: text,
+          resultType: 'translation',
+          result: result,
+          targetLanguage: targetLang
+        });
+      } else {
+        throw new Error(response.error || 'AI processing failed');
+      }
     } else if (action === 'proofread') {
-      result = await proofreadText(text);
-      chrome.runtime.sendMessage({
-        action: 'showResult',
-        sourceText: text,
-        resultType: 'proofread',
-        result: result
+      const response = await chrome.runtime.sendMessage({
+        action: 'processAI',
+        aiFunction: 'proofread',
+        text: text
       });
+      
+      if (response.success) {
+        result = response.result;
+        chrome.runtime.sendMessage({
+          action: 'showResult',
+          sourceText: text,
+          resultType: 'proofread',
+          result: result
+        });
+      } else {
+        throw new Error(response.error || 'AI processing failed');
+      }
     }
     
   } catch (error) {
@@ -290,7 +331,17 @@ async function handleExplainPage(pageText) {
   }, 100);
   
   try {
-    const result = await explainText(pageText);
+    const response = await chrome.runtime.sendMessage({
+      action: 'processAI',
+      aiFunction: 'explain',
+      text: pageText
+    });
+    
+    if (!response.success) {
+      throw new Error(response.error || 'AI processing failed');
+    }
+    
+    const result = response.result;
     
     chrome.runtime.sendMessage({
       action: 'showResult',
@@ -364,7 +415,17 @@ Question: ${transcript}
 
 Answer the question based on the page content above.`;
       
-      const result = await promptAI(contextPrompt);
+      const response = await chrome.runtime.sendMessage({
+        action: 'processAI',
+        aiFunction: 'prompt',
+        text: contextPrompt
+      });
+      
+      if (!response.success) {
+        throw new Error(response.error || 'AI processing failed');
+      }
+      
+      const result = response.result;
       
       chrome.runtime.sendMessage({
         action: 'showResult',
@@ -557,7 +618,17 @@ Image context: ${synthesized}
 
 Write the description now:`;
 
-    let result = await promptAI(prompt);
+    const response = await chrome.runtime.sendMessage({
+      action: 'processAI',
+      aiFunction: 'prompt',
+      text: prompt
+    });
+    
+    if (!response.success) {
+      throw new Error(response.error || 'AI processing failed');
+    }
+    
+    let result = response.result;
     // Clean up the result
     result = result
       .split('\n')

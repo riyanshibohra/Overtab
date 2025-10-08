@@ -916,6 +916,134 @@ body {
   display: none !important;
 }
 
+/* Inline unlock button (shown in status badge when API key is locked) */
+.unlock-btn-inline {
+  padding: 4px 10px;
+  background: #507fb9; /* calm blue */
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+  margin-left: auto;
+}
+
+.unlock-btn-inline:hover {
+  background: #8aacd9;
+}
+
+.status-badge.locked {
+  background: transparent; /* remove tinted background */
+  border-left: none; /* remove orange strip */
+}
+
+/* Unlock Modal (simple passcode entry) */
+.unlock-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  backdrop-filter: blur(4px);
+}
+
+.unlock-modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.unlock-modal-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #202124;
+}
+
+.unlock-modal-content p {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: #5f6368;
+}
+
+.unlock-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.unlock-input:focus {
+  outline: none;
+  border-color: #507fb9;
+  box-shadow: 0 0 0 3px rgba(80, 127, 185, 0.1);
+}
+
+.unlock-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.unlock-submit-btn {
+  flex: 1;
+  padding: 12px;
+  background: #507fb9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unlock-submit-btn:hover {
+  background: #67a0e0;
+}
+
+.unlock-submit-btn:disabled {
+  background: #9aa0a6;
+  cursor: not-allowed;
+}
+
+.unlock-cancel-btn {
+  flex: 1;
+  padding: 12px;
+  background: #f1f3f4;
+  color: #5f6368;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unlock-cancel-btn:hover {
+  background: #e8eaed;
+}
+
+.unlock-error {
+  display: block;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #d93025;
+  text-align: center;
+}
+
 /* Toast notifications */
 .overtab-toast {
   position: fixed;

@@ -147,15 +147,46 @@ document.addEventListener('DOMContentLoaded', function() {
   async function loadSettings() {
     const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiKeyEncrypted', 'openaiModel', 'openaiTemperature', 'fallbackPreference', 'primaryProvider']);
     const session = await chrome.storage.session.get(['encryptionPasscode']);
+    const passcodeHint = document.querySelector('#encryption-passcode + .input-hint');
     
+    // Handle API Key field display
     if (settings.openaiApiKey) {
+      // Plaintext key stored
       apiKeyInput.value = settings.openaiApiKey;
+      apiKeyInput.placeholder = 'sk-...';
+      apiKeyInput.readOnly = false;
     } else if (settings.openaiKeyEncrypted) {
-      apiKeyInput.placeholder = 'Encrypted (enter passcode to use)';
+      // Encrypted key
+      if (session.encryptionPasscode) {
+        // Passcode in session - key is unlocked and ready to use
+        apiKeyInput.value = '';
+        apiKeyInput.placeholder = '✓ Encrypted & Unlocked (ready to use)';
+        apiKeyInput.style.color = '#0f9d58';
+        apiKeyInput.readOnly = true;
+      } else {
+        // No passcode in session - needs unlock
+        apiKeyInput.value = '';
+        apiKeyInput.placeholder = '🔒 Encrypted (enter passcode below to unlock)';
+        apiKeyInput.style.color = '#e65100';
+        apiKeyInput.readOnly = true;
+      }
     }
 
+    // Handle Passcode field display and hint
     if (session.encryptionPasscode) {
       encryptionPasscodeInput.value = session.encryptionPasscode;
+      encryptionPasscodeInput.readOnly = true;
+      passcodeHint.textContent = '✓ Your API key is unlocked and ready to use this session';
+      passcodeHint.style.color = '#0f9d58';
+    } else if (settings.openaiKeyEncrypted) {
+      encryptionPasscodeInput.value = '';
+      encryptionPasscodeInput.readOnly = false;
+      passcodeHint.textContent = '🔑 Enter your passcode to unlock the encrypted API key';
+      passcodeHint.style.color = '#e65100';
+    } else {
+      encryptionPasscodeInput.readOnly = false;
+      passcodeHint.textContent = 'We encrypt your API key with this passcode. You\'ll re-enter it after restart.';
+      passcodeHint.style.color = '#5f6368';
     }
     
     if (settings.openaiModel) {
@@ -183,7 +214,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const model = modelSelect.value;
     const temperature = parseFloat(temperatureSlider.value);
     const fallback = fallbackPreference.value;
-    const primary = primaryProvider.value;
+    let primary = primaryProvider.value;
+    
+    // Smart default: if saving OpenAI key and Gemini Nano is not available, set OpenAI as primary
+    if (apiKey || passcode) {
+      // Check if Gemini is available
+      let geminiAvailable = false;
+      try {
+        if (typeof LanguageModel !== 'undefined') {
+          const availability = await LanguageModel.availability();
+          geminiAvailable = (availability === 'readily' || availability === 'available');
+        }
+      } catch (e) {}
+      
+      // If Gemini not available OR no primary set, default to OpenAI
+      if (!geminiAvailable || !primary) {
+        primary = 'openai';
+        primaryProvider.value = 'openai';
+        console.log('✅ Auto-selected OpenAI as primary provider');
+      }
+    }
     
     // Determine storage: plaintext or encrypted
     const existing = await chrome.storage.local.get(['openaiApiKey', 'openaiKeyEncrypted']);
@@ -232,6 +282,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     await chrome.storage.local.set(toSet);
     
+    // Reset input styling
+    apiKeyInput.style.color = '';
+    
     // Show success message
     saveSettingsBtn.textContent = '✓ Saved!';
     setTimeout(() => {
@@ -244,6 +297,14 @@ document.addEventListener('DOMContentLoaded', function() {
   clearApiBtn.addEventListener('click', async function() {
     if (confirm('Are you sure you want to clear your API key? This cannot be undone.')) {
       apiKeyInput.value = '';
+      apiKeyInput.placeholder = 'sk-...';
+      apiKeyInput.style.color = '';
+      encryptionPasscodeInput.value = '';
+      
+      const passcodeHint = document.querySelector('#encryption-passcode + .input-hint');
+      passcodeHint.textContent = 'We encrypt your API key with this passcode. You\'ll re-enter it after restart.';
+      passcodeHint.style.color = '#5f6368';
+      
       await chrome.storage.local.remove(['openaiApiKey', 'openaiKeyEncrypted']);
       await chrome.storage.session.remove('encryptionPasscode');
       apiTestResult.textContent = '✓ API key cleared';
@@ -406,8 +467,108 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // Check if API key needs unlocking and show inline unlock button
+  async function checkUnlockStatus() {
+    const settings = await chrome.storage.local.get(['openaiKeyEncrypted', 'primaryProvider']);
+    const session = await chrome.storage.session.get(['encryptionPasscode']);
+    const unlockBtn = document.getElementById('unlock-btn');
+    const statusBadge = document.getElementById('status-badge-container');
+    
+    const isPrimaryOpenAI = settings.primaryProvider === 'openai';
+    const isKeyLocked = settings.openaiKeyEncrypted && !session.encryptionPasscode;
+    
+    if (isPrimaryOpenAI && isKeyLocked) {
+      // Encrypted but locked - show unlock button and highlight badge
+      unlockBtn.classList.remove('hidden');
+      statusBadge.classList.add('locked');
+    } else {
+      unlockBtn.classList.add('hidden');
+      statusBadge.classList.remove('locked');
+    }
+  }
+
+  // Unlock button - open modal
+  const unlockBtn = document.getElementById('unlock-btn');
+  const unlockModal = document.getElementById('unlock-modal');
+  const unlockPasscodeInput = document.getElementById('unlock-passcode-input');
+  const unlockSubmitBtn = document.getElementById('unlock-submit-btn');
+  const unlockCancelBtn = document.getElementById('unlock-cancel-btn');
+  const unlockError = document.getElementById('unlock-error');
+
+  unlockBtn.addEventListener('click', function(e) {
+    e.stopPropagation(); // Prevent status badge click from firing
+    unlockModal.classList.remove('hidden');
+    unlockPasscodeInput.value = '';
+    unlockError.textContent = '';
+    setTimeout(() => unlockPasscodeInput.focus(), 100);
+  });
+
+  unlockCancelBtn.addEventListener('click', function() {
+    unlockModal.classList.add('hidden');
+  });
+
+  // Submit passcode to unlock
+  unlockSubmitBtn.addEventListener('click', async function() {
+    const passcode = unlockPasscodeInput.value.trim();
+    
+    if (!passcode) {
+      unlockError.textContent = 'Please enter your passcode';
+      return;
+    }
+    
+    unlockSubmitBtn.disabled = true;
+    unlockSubmitBtn.textContent = 'Unlocking...';
+    unlockError.textContent = '';
+    
+    try {
+      // Try to decrypt the key with this passcode
+      const settings = await chrome.storage.local.get(['openaiKeyEncrypted']);
+      if (!settings.openaiKeyEncrypted) {
+        unlockError.textContent = 'No encrypted key found';
+        return;
+      }
+      
+      // Attempt decryption
+      await decryptTextWithPasscode(settings.openaiKeyEncrypted, passcode);
+      
+      // Success! Save passcode to session
+      await chrome.storage.session.set({ encryptionPasscode: passcode });
+      
+      // Close modal, hide unlock button, and update badge
+      unlockModal.classList.add('hidden');
+      await checkUnlockStatus();
+      await updateAIStatusBadge();
+      
+      // Remove locked state from badge
+      const statusBadge = document.getElementById('status-badge-container');
+      statusBadge.classList.remove('locked');
+      
+      // Show success briefly
+      unlockSubmitBtn.textContent = '✓ Unlocked!';
+      setTimeout(() => {
+        unlockSubmitBtn.textContent = 'Unlock';
+      }, 1500);
+      
+    } catch (error) {
+      unlockError.textContent = '❌ Incorrect passcode';
+      unlockPasscodeInput.value = '';
+      unlockPasscodeInput.focus();
+    } finally {
+      unlockSubmitBtn.disabled = false;
+      unlockSubmitBtn.textContent = 'Unlock';
+    }
+  });
+
+  // Allow Enter key to submit
+  unlockPasscodeInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      unlockSubmitBtn.click();
+    }
+  });
+
   // Check status on load
   checkGeminiStatus();
+  checkUnlockStatus();
 
   // Listen for storage changes and update badge in real-time
   chrome.storage.onChanged.addListener((changes, areaName) => {
