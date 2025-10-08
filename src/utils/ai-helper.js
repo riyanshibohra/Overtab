@@ -194,11 +194,9 @@ Key points:
       }
     }
     
-    console.log('🟡 [EXPLAIN] Using demo mode');
+    console.log('[EXPLAIN] Using demo mode');
     await simulateDelay();
-    
-    const preview = text.length > 100 ? text.substring(0, 100) + '...' : text;
-    return `📝 DEMO MODE - Explanation:\n\nThe selected text discusses: "${preview}"\n\nKey points:\n• This is a demonstration of the Explanation feature\n• In production, this would use Chrome's Summarizer API with Gemini Nano\n• The AI would provide intelligent key points and summaries\n• All processing happens on-device for privacy\n\n✨ Real AI will be used when Chrome Built-in AI APIs become available in your browser.`;
+    return demoResponse('explain', { text });
     
   } catch (error) {
     console.error('Explain error:', error);
@@ -277,11 +275,9 @@ Provide a simplified version that is:
       }
     }
     
-    console.log('🟡 [SIMPLIFY] Using demo mode');
+    console.log('[SIMPLIFY] Using demo mode');
     await simulateDelay();
-    
-    const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
-    return `✨ DEMO MODE - Simplified (Explained like you're 10):\n\n"${preview}"\n\nIn simple words:\nImagine this is like explaining something to a 10-year-old! The AI would break down complex ideas into easy-to-understand language, using simple words and familiar examples.\n\n📚 Key idea: Takes hard-to-understand text and makes it super clear and simple!\n\n✨ Real AI will provide actual simplified explanations when Chrome Built-in AI APIs become available.`;
+    return demoResponse('simplify', { text });
     
   } catch (error) {
     console.error('Simplify error:', error);
@@ -360,10 +356,9 @@ async function translateText(text, targetLanguage = 'es') {
     }
     
     // Demo mode fallback (only if API not available)
-    console.log('🟡 [TRANSLATE] Using demo mode (API not available)');
+    console.log('[TRANSLATE] Using demo mode (API not available)');
     await simulateDelay();
-    
-    return `🌐 DEMO MODE - Translation to ${languageNames[targetLanguage]}:\n\n[This is where the translated text would appear]\n\nOriginal text: "${text.substring(0, 50)}..."\n\nIn production, this would use Chrome's specialized Translation API with Gemini Nano to provide fast, accurate on-device translation while maintaining your privacy.\n\n✨ Real AI translation will be used when Chrome Built-in AI APIs become available.`;
+    return demoResponse('translate', { languageName: languageNames[targetLanguage] });
     
   } catch (error) {
     console.error('🔴 [TRANSLATE] Error:', error);
@@ -414,11 +409,9 @@ async function proofreadText(text) {
     }
     
     // Demo mode fallback
-    console.log('🟡 [PROOFREAD] Using demo mode (API not available)');
+    console.log('[PROOFREAD] Using demo mode (API not available)');
     await simulateDelay();
-    
-    const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
-    return `✅ DEMO MODE - Proofread:\n\n"${preview}"\n\nIn production, this would use Chrome's Proofreader API with Gemini Nano to automatically correct grammar, spelling, and punctuation errors while maintaining your privacy.\n\n✨ Real grammar checking will be available when Chrome Built-in AI APIs become available.`;
+    return demoResponse('proofread', { text });
     
   } catch (error) {
     console.error('🔴 [PROOFREAD] Error:', error);
@@ -430,6 +423,39 @@ async function proofreadText(text) {
 function simulateDelay() {
   const delay = 500 + Math.random() * 1000;
   return new Promise(resolve => setTimeout(resolve, delay));
+}
+
+// Unified, minimal demo responses (kept intentionally short and straightforward)
+function demoResponse(type, params = {}) {
+  switch (type) {
+    case 'explain': {
+      const preview = (params.text || '').trim().slice(0, 120);
+      const summary = preview || 'Summary of your text.';
+      return `Demo mode: Example explanation\nSummary: ${summary}\n- Key point 1\n- Key point 2\n- Key point 3`;
+    }
+    case 'simplify': {
+      const preview = (params.text || '').trim().slice(0, 120);
+      return `Demo mode: Example simplified version\n${preview}`;
+    }
+    case 'translate': {
+      const language = params.languageName || 'Target Language';
+      return `Demo mode: Example translation to ${language}. Enable AI in Settings for real translation.`;
+    }
+    case 'proofread': {
+      const preview = (params.text || '').trim().slice(0, 120);
+      return `Demo mode: Example corrected text\n${preview}`;
+    }
+    case 'image': {
+      return 'Demo mode: Example image description. Enable AI in Settings for real analysis.';
+    }
+    case 'prompt':
+    default: {
+      const q = (params.prompt || '').trim().slice(0, 120);
+      return q
+        ? `Demo mode: Example answer for: "${q}". Enable AI in Settings for real answers.`
+        : 'Demo mode: Example answer. Enable AI in Settings for real answers.';
+    }
+  }
 }
 
 // Prompt API - General queries  
@@ -476,14 +502,14 @@ async function promptAI(prompt) {
       }
     }
     
-    console.log('🟡 [PROMPT] Using demo mode');
+    console.log('[PROMPT] Using demo mode');
     await simulateDelay();
     
     if (prompt.toLowerCase().includes('describe this image')) {
-      return `🖼️ DEMO MODE - Image Description:\n\nThis is a demonstration of the image description feature. In production, this would use Chrome's Prompt API with Gemini Nano to analyze the image content and provide detailed descriptions.\n\n✨ Real AI image analysis will be available when Chrome Built-in AI APIs support multimodal inputs.`;
+      return demoResponse('image');
     }
     
-    return `🤖 DEMO MODE - AI Response:\n\nYour question: "${prompt}"\n\nThis is a demonstration of the Prompt API feature. In production, this would process your question using Gemini Nano and provide intelligent, context-aware answers while maintaining your privacy.\n\n✨ Real AI responses will be available when Chrome Built-in AI APIs become available in your browser.`;
+    return demoResponse('prompt', { prompt });
     
   } catch (error) {
     console.error('Prompt AI error:', error);
