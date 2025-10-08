@@ -1449,6 +1449,11 @@ body {
   box-shadow: 0 0 0 3px rgba(80, 127, 185, 0.1);
 }
 
+.settings-select option:disabled {
+  color: #9aa0a6;
+  background: #f1f3f4;
+}
+
 .settings-slider {
   width: 100%;
   height: 6px;
@@ -1456,6 +1461,7 @@ body {
   background: #e8eaed;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
 }
 
 .settings-slider::-webkit-slider-thumb {

@@ -306,49 +306,103 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusIcon = document.querySelector('.status-indicator img');
     const statusText = document.getElementById('ai-status-text');
     const statusLabel = document.getElementById('ai-status-label');
-    
-    // Check if user has chosen OpenAI as primary
-    if (prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted)) {
+    const hasOpenAIKey = !!(prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+
+    // If user prefers OpenAI and key is present
+    if (prefs.primaryProvider === 'openai' && hasOpenAIKey) {
       statusIcon.src = '../../icons/openai-logo.png';
       statusIcon.alt = 'OpenAI';
       statusText.textContent = 'Using OpenAI API';
       statusLabel.textContent = 'CLOUD AI';
       statusLabel.style.background = '#e3f2fd';
       statusLabel.style.color = '#1976d2';
-    } else {
-      // Default to Gemini Nano or show it if available
+      return;
+    }
+
+    // Check Gemini availability
+    let geminiAvailable = false;
+    try {
+      if (typeof LanguageModel !== 'undefined') {
+        const availability = await LanguageModel.availability();
+        geminiAvailable = (availability === 'readily' || availability === 'available');
+      }
+    } catch (e) {
+      console.error('Error checking Gemini:', e);
+    }
+
+    if (geminiAvailable) {
       statusIcon.src = '../../icons/gemini-logo.png';
       statusIcon.alt = 'Gemini';
       statusText.textContent = 'Powered by Gemini Nano';
       statusLabel.textContent = 'ON-DEVICE';
       statusLabel.style.background = '#e6f4ea';
       statusLabel.style.color = '#34a853';
+    } else if (hasOpenAIKey) {
+      statusIcon.src = '../../icons/openai-logo.png';
+      statusIcon.alt = 'OpenAI';
+      statusText.textContent = 'OpenAI API Ready';
+      statusLabel.textContent = 'CLOUD AI';
+      statusLabel.style.background = '#e3f2fd';
+      statusLabel.style.color = '#1976d2';
+    } else {
+      // First-time user / no providers configured
+      statusIcon.src = '../../icons/settings-icon.svg';
+      statusIcon.alt = 'Setup';
+      statusText.textContent = 'Configure AI in Settings';
+      statusLabel.textContent = 'CLICK';
+      statusLabel.style.background = '#fff3e0';
+      statusLabel.style.color = '#e65100';
     }
   }
 
   // Check Gemini Nano status
   async function checkGeminiStatus() {
+    const geminiOption = primaryProvider.querySelector('option[value="gemini-nano"]');
+    let isGeminiAvailable = false;
+    
     try {
       if (typeof LanguageModel !== 'undefined') {
         const availability = await LanguageModel.availability();
         
         if (availability === 'readily' || availability === 'available') {
-          geminiStatus.textContent = '✓ Gemini Nano is available!';
+          geminiStatus.textContent = '✓ Gemini Nano is available and ready';
           geminiStatus.style.color = '#0f9d58';
+          isGeminiAvailable = true;
+          
+          // Enable Gemini option
+          geminiOption.disabled = false;
+          geminiOption.textContent = 'Gemini Nano (On-Device, Private)';
         } else {
           geminiStatus.textContent = `⚠️ Gemini Nano status: ${availability}`;
           geminiStatus.style.color = '#f29900';
+          
+          // Disable Gemini option
+          geminiOption.disabled = true;
+          geminiOption.textContent = `Gemini Nano (Not Available - ${availability})`;
         }
       } else {
         geminiStatus.textContent = '❌ Gemini Nano not available';
         geminiStatus.style.color = '#d93025';
+        
+        // Disable Gemini option
+        geminiOption.disabled = true;
+        geminiOption.textContent = 'Gemini Nano (Not Available)';
       }
-      a
+      
+      // If Gemini is not available and currently selected, switch to OpenAI
+      if (!isGeminiAvailable && primaryProvider.value === 'gemini-nano') {
+        primaryProvider.value = 'openai';
+      }
+      
       // Update the badge based on settings
       await updateAIStatusBadge();
     } catch (error) {
       geminiStatus.textContent = '❌ Error checking status';
       geminiStatus.style.color = '#d93025';
+      
+      // Disable Gemini option on error
+      geminiOption.disabled = true;
+      geminiOption.textContent = 'Gemini Nano (Error)';
     }
   }
 
@@ -359,11 +413,22 @@ document.addEventListener('DOMContentLoaded', function() {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local') {
       // If primaryProvider or openaiApiKey changed, update the badge immediately
-      if (changes.primaryProvider || changes.openaiApiKey) {
+      if (changes.primaryProvider || changes.openaiApiKey || changes.openaiKeyEncrypted) {
         updateAIStatusBadge();
       }
     }
   });
+
+  // Make status badge clickable to open settings (helpful for first-time setup)
+  const statusBadge = document.querySelector('.status-badge');
+  if (statusBadge) {
+    statusBadge.style.cursor = 'pointer';
+    statusBadge.addEventListener('click', async function() {
+      settingsModal.classList.remove('hidden');
+      await loadSettings();
+      await checkGeminiStatus();
+    });
+  }
 
 });
   
