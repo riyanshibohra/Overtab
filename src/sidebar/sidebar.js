@@ -517,18 +517,24 @@ async function sendChatMessage() {
   const loadingId = addMessageToChat('assistant', '...');
   
   try {
-    // Build conversation context
-    const systemPrompt = `You are a helpful AI assistant. The user previously asked you to ${chatContext.resultType} some text. Here's the FULL CONTEXT you need to remember:
+    // Extract topic/subject from context for reference
+    const contextTopic = chatContext.sourceText.substring(0, 150).replace(/\n/g, ' ');
+    
+    // Build conversation context - EXTREMELY directive to use knowledge base
+    const systemPrompt = `You are an expert AI assistant with extensive knowledge. The user is asking about topics related to: "${contextTopic}..."
 
-ORIGINAL TEXT: "${chatContext.sourceText}"
+YOUR ROLE:
+- Provide detailed, factual information from your training data and knowledge base
+- NEVER say "the text doesn't provide" or "I don't have information" - you DO have information!
+- When asked about historical events, people, or topics - share what you KNOW from your training
+- Give comprehensive answers with specific facts, dates, names, and details from your knowledge
+- Think of yourself as an encyclopedia, not just a text summarizer
 
-YOUR PREVIOUS RESPONSE: "${chatContext.result.substring(0, 500)}${chatContext.result.length > 500 ? '...' : ''}"
-
-IMPORTANT: 
-- Use this context to answer follow-up questions about the content
-- If they ask about names, places, or topics mentioned in the original text, refer to this context
-- Keep responses VERY SHORT: Maximum 2-3 sentences OR 3 bullet points(IMPORTANT)
-- Be concise and direct`;
+RESPONSE STYLE:
+- Be informative and educational
+- Include specific details and facts
+- Maximum 2-3 sentences OR 3 detailed bullet points
+- Use your full knowledge - don't be limited by the reference text above`;
 
     // Build full prompt with history
     let fullPrompt = systemPrompt + '\n\n';
@@ -586,7 +592,8 @@ IMPORTANT:
     // Try Gemini Nano if not using OpenAI primary or if primary failed
     if (!response && chatSession) {
       try {
-        response = await chatSession.prompt(message);
+        // IMPORTANT: Use fullPrompt (with context + history) instead of just message
+        response = await chatSession.prompt(fullPrompt);
       } catch (err) {
         console.error('Chat session error:', err);
       }
