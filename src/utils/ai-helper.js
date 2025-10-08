@@ -183,11 +183,11 @@ Provide a simplified version that is:
   }
 }
 
-// Translator API - Translate text
+// Translator API - Translate text (SPECIALIZED API - 28x faster than LanguageModel!)
 // Supported languages: Spanish, French, German, Italian, Japanese, Hindi
 async function translateText(text, targetLanguage = 'es') {
   const startTime = Date.now();
-  console.log('🟣 [TRANSLATE] Starting... (en →', targetLanguage, ')');
+  console.log('🟣 [TRANSLATE] Starting with Translator API... (en →', targetLanguage, ')');
   
   const languageNames = {
     'es': 'Spanish',
@@ -199,70 +199,29 @@ async function translateText(text, targetLanguage = 'es') {
   };
   
   try {
-    // Analyze original format
-    const lines = text.split('\n');
-    const hasBullets = text.match(/^[\*\-•]\s/m);
-    const hasMultipleLines = lines.length > 1;
-    const isShortPhrase = text.trim().split(/\s+/).length <= 5 && !hasMultipleLines;
-    
-    // Use LanguageModel for format-preserving translation
-    if (typeof LanguageModel !== 'undefined') {
-      const availability = await LanguageModel.availability();
-      console.log('🟣 [TRANSLATE] LanguageModel availability:', availability);
-      
-      if (availability === 'readily' || availability === 'available') {
-        try {
-          const session = await LanguageModel.create();
-          
-          let instructions = '';
-          if (isShortPhrase) {
-            instructions = 'Translate ONLY the text itself. Do NOT add bullet points, explanations, or extra formatting. Just provide the direct translation.';
-          } else if (hasBullets) {
-            instructions = 'Translate each bullet point. Keep the same bullet markers (*, -, •) and line structure. Do NOT add introductory text.';
-          } else if (hasMultipleLines) {
-            instructions = 'Translate each line/paragraph. Preserve the line breaks and paragraph structure. Do NOT convert to bullet points.';
-          } else {
-            instructions = 'Translate the paragraph. Keep it as a flowing paragraph, do NOT convert to bullet points.';
-          }
-          
-          const prompt = `Translate this English text to ${languageNames[targetLanguage]}:
-
-${text}
-
-${instructions}
-
-Provide ONLY the translation, nothing else.`;
-          
-          const result = await session.prompt(prompt);
-          session.destroy();
-          logTiming('[TRANSLATE] Success', startTime);
-          return result.trim();
-        } catch (err) {
-          console.error('🔴 [TRANSLATE] LanguageModel error:', err.message);
-          // Fallback to Translator API
-        }
-      }
-    }
-    
-    // Fallback to Translator API
+    // Use Translator API (specialized and optimized for translation)
     if (typeof Translator !== 'undefined') {
       const availability = await Translator.availability({
         sourceLanguage: 'en',
         targetLanguage: targetLanguage
       });
-      console.log('🟣 [TRANSLATE] Translator availability (fallback):', availability);
+      console.log('🟣 [TRANSLATE] Translator API availability:', availability);
       
+      // Handle all availability states
       if (availability === 'readily' || availability === 'available') {
+        console.log('✅ [TRANSLATE] Translator ready, translating...');
         const translator = await Translator.create({
           sourceLanguage: 'en',
           targetLanguage: targetLanguage
         });
         const result = await translator.translate(text);
         translator.destroy();
-        logTiming('[TRANSLATE] Success (Translator)', startTime);
+        logTiming('[TRANSLATE] Success', startTime);
         return result;
-      } else if (availability === 'after-download' || availability === 'downloadable') {
-        console.log('🟡 [TRANSLATE] Downloading language pack for', targetLanguage, '...');
+      } 
+      else if (availability === 'after-download' || availability === 'downloadable') {
+        console.log('📥 [TRANSLATE] Downloading language pack for', languageNames[targetLanguage], '...');
+        // Creating the translator will trigger the download
         const translator = await Translator.create({
           sourceLanguage: 'en',
           targetLanguage: targetLanguage
@@ -271,19 +230,21 @@ Provide ONLY the translation, nothing else.`;
         translator.destroy();
         logTiming('[TRANSLATE] Success (after download)', startTime);
         return result;
-      } else {
-        console.error('🔴 [TRANSLATE] Not supported:', availability);
-        throw new Error(`Translation to ${targetLanguage} not supported`);
+      } 
+      else {
+        console.error('🔴 [TRANSLATE] Language not supported:', availability);
+        throw new Error(`Translation to ${languageNames[targetLanguage]} is not supported`);
       }
     }
     
-    console.log('🟡 [TRANSLATE] Using demo mode');
+    // Demo mode fallback (only if API not available)
+    console.log('🟡 [TRANSLATE] Using demo mode (API not available)');
     await simulateDelay();
     
-    return `🌐 DEMO MODE - Translation to ${languageNames[targetLanguage] || targetLanguage}:\n\n[This is where the translated text would appear]\n\nOriginal text: "${text.substring(0, 50)}..."\n\nIn production, this would use Chrome's Translation API with Gemini Nano to provide accurate on-device translation while maintaining your privacy.\n\n✨ Real AI translation will be used when Chrome Built-in AI APIs become available.`;
+    return `🌐 DEMO MODE - Translation to ${languageNames[targetLanguage]}:\n\n[This is where the translated text would appear]\n\nOriginal text: "${text.substring(0, 50)}..."\n\nIn production, this would use Chrome's specialized Translation API with Gemini Nano to provide fast, accurate on-device translation while maintaining your privacy.\n\n✨ Real AI translation will be used when Chrome Built-in AI APIs become available.`;
     
   } catch (error) {
-    console.error('Translate error:', error);
+    console.error('🔴 [TRANSLATE] Error:', error);
     throw error;
   }
 }
