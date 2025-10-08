@@ -6,12 +6,82 @@ function logTiming(label, startTime) {
   console.log(`⏱️ ${label}: ${Date.now() - startTime}ms`);
 }
 
+// --- Minimal crypto helpers (AES-GCM + PBKDF2) ---
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+function toBase64(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function fromBase64(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function deriveAesKey(passcode, saltBytes) {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    textEncoder.encode(passcode),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: saltBytes,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptTextWithPasscode(plaintext, passcode) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const aesKey = await deriveAesKey(passcode, salt);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, textEncoder.encode(plaintext));
+  return {
+    ciphertext: toBase64(ciphertext),
+    iv: toBase64(iv.buffer),
+    salt: toBase64(salt.buffer)
+  };
+}
+
+async function decryptTextWithPasscode(encObj, passcode) {
+  const iv = new Uint8Array(fromBase64(encObj.iv));
+  const salt = new Uint8Array(fromBase64(encObj.salt));
+  const aesKey = await deriveAesKey(passcode, salt);
+  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, aesKey, fromBase64(encObj.ciphertext));
+  return textDecoder.decode(decrypted);
+}
+
 // OpenAI API Helper Functions
 async function getOpenAISettings() {
   try {
-    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature']);
+    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiKeyEncrypted', 'openaiModel', 'openaiTemperature']);
+    const session = await chrome.storage.session.get(['encryptionPasscode']);
+    let apiKey = settings.openaiApiKey || null;
+    if (!apiKey && settings.openaiKeyEncrypted && session.encryptionPasscode) {
+      try {
+        apiKey = await decryptTextWithPasscode(settings.openaiKeyEncrypted, session.encryptionPasscode);
+      } catch (e) {
+        console.error('Error decrypting OpenAI key:', e);
+      }
+    }
     return {
-      apiKey: settings.openaiApiKey || null,
+      apiKey,
       model: settings.openaiModel || 'gpt-4o-mini',
       temperature: settings.openaiTemperature !== undefined ? settings.openaiTemperature : 0.7
     };
@@ -23,7 +93,7 @@ async function getOpenAISettings() {
 
 async function shouldUseOpenAI() {
   try {
-    const prefs = await chrome.storage.local.get(['fallbackPreference', 'openaiApiKey']);
+    const prefs = await chrome.storage.local.get(['fallbackPreference', 'openaiApiKey', 'openaiKeyEncrypted']);
     const fallback = prefs.fallbackPreference || 'openai-first';
     
     if (fallback === 'demo-only') {
@@ -34,7 +104,7 @@ async function shouldUseOpenAI() {
       return false; // Skip OpenAI, will throw error
     }
     
-    return !!prefs.openaiApiKey; // Only use if API key exists
+    return !!(prefs.openaiApiKey || prefs.openaiKeyEncrypted); // Use if any key exists
   } catch (error) {
     return false;
   }

@@ -767,7 +767,7 @@ function escapeHtml(text) {
 
 // Update AI status badge in sidebar with appropriate icon and text
 async function updateSidebarAIStatus() {
-  const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey']);
+  const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted']);
   const statusIcon = document.getElementById('sidebar-ai-icon');
   const statusText = document.getElementById('sidebar-status-text');
   const statusLabel = document.getElementById('sidebar-status-label');
@@ -775,7 +775,7 @@ async function updateSidebarAIStatus() {
   if (!statusIcon || !statusText || !statusLabel) return;
   
   // Check if user has chosen OpenAI as primary
-  if (prefs.primaryProvider === 'openai' && prefs.openaiApiKey) {
+  if (prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted)) {
     statusIcon.src = '../../icons/openai-logo.png';
     statusIcon.alt = 'OpenAI';
     statusText.textContent = 'Using OpenAI API';

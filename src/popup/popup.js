@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const clearApiBtn = document.getElementById('clear-api-key');
   
   const apiKeyInput = document.getElementById('openai-api-key');
+  const encryptionPasscodeInput = document.getElementById('encryption-passcode');
   const modelSelect = document.getElementById('openai-model');
   const temperatureSlider = document.getElementById('openai-temperature');
   const tempValue = document.getElementById('temp-value');
@@ -144,10 +145,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load settings
   async function loadSettings() {
-    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature', 'fallbackPreference', 'primaryProvider']);
+    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiKeyEncrypted', 'openaiModel', 'openaiTemperature', 'fallbackPreference', 'primaryProvider']);
+    const session = await chrome.storage.session.get(['encryptionPasscode']);
     
     if (settings.openaiApiKey) {
       apiKeyInput.value = settings.openaiApiKey;
+    } else if (settings.openaiKeyEncrypted) {
+      apiKeyInput.placeholder = 'Encrypted (enter passcode to use)';
+    }
+
+    if (session.encryptionPasscode) {
+      encryptionPasscodeInput.value = session.encryptionPasscode;
     }
     
     if (settings.openaiModel) {
@@ -171,18 +179,58 @@ document.addEventListener('DOMContentLoaded', function() {
   // Save settings
   saveSettingsBtn.addEventListener('click', async function() {
     const apiKey = apiKeyInput.value.trim();
+    const passcode = encryptionPasscodeInput.value.trim();
     const model = modelSelect.value;
     const temperature = parseFloat(temperatureSlider.value);
     const fallback = fallbackPreference.value;
     const primary = primaryProvider.value;
     
-    await chrome.storage.local.set({
-      openaiApiKey: apiKey,
+    // Determine storage: plaintext or encrypted
+    const existing = await chrome.storage.local.get(['openaiApiKey', 'openaiKeyEncrypted']);
+    const toSet = {
       openaiModel: model,
       openaiTemperature: temperature,
       fallbackPreference: fallback,
       primaryProvider: primary
-    });
+    };
+    
+    // If user provided passcode and apiKey, store encrypted and keep passcode in session
+    if (passcode && apiKey) {
+      try {
+        const enc = await encryptTextWithPasscode(apiKey, passcode);
+        toSet.openaiApiKey = '';
+        toSet.openaiKeyEncrypted = enc;
+        await chrome.storage.session.set({ encryptionPasscode: passcode });
+      } catch (e) {
+        alert('Failed to encrypt with passcode. Key will be saved unencrypted.');
+        toSet.openaiApiKey = apiKey;
+        toSet.openaiKeyEncrypted = null;
+      }
+    } else if (apiKey) {
+      // Plaintext save (no passcode)
+      toSet.openaiApiKey = apiKey;
+      toSet.openaiKeyEncrypted = null;
+      if (!passcode) await chrome.storage.session.remove('encryptionPasscode');
+    } else {
+      // No new key provided
+      if (existing.openaiKeyEncrypted) {
+        // Preserve existing encrypted key; optionally set session passcode
+        toSet.openaiApiKey = existing.openaiApiKey || '';
+        toSet.openaiKeyEncrypted = existing.openaiKeyEncrypted;
+        if (passcode) {
+          await chrome.storage.session.set({ encryptionPasscode: passcode });
+        } else {
+          await chrome.storage.session.remove('encryptionPasscode');
+        }
+      } else {
+        // Preserve existing plaintext key (if any)
+        toSet.openaiApiKey = existing.openaiApiKey || '';
+        toSet.openaiKeyEncrypted = null;
+        if (!passcode) await chrome.storage.session.remove('encryptionPasscode');
+      }
+    }
+
+    await chrome.storage.local.set(toSet);
     
     // Show success message
     saveSettingsBtn.textContent = '✓ Saved!';
@@ -196,7 +244,8 @@ document.addEventListener('DOMContentLoaded', function() {
   clearApiBtn.addEventListener('click', async function() {
     if (confirm('Are you sure you want to clear your API key? This cannot be undone.')) {
       apiKeyInput.value = '';
-      await chrome.storage.local.remove('openaiApiKey');
+      await chrome.storage.local.remove(['openaiApiKey', 'openaiKeyEncrypted']);
+      await chrome.storage.session.remove('encryptionPasscode');
       apiTestResult.textContent = '✓ API key cleared';
       apiTestResult.className = 'api-test-result success';
       
@@ -253,27 +302,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Update AI status badge with appropriate icon and text
   async function updateAIStatusBadge() {
-    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey']);
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted']);
     const statusIcon = document.querySelector('.status-indicator img');
     const statusText = document.getElementById('ai-status-text');
     const statusLabel = document.getElementById('ai-status-label');
-    
-    // Check if user has chosen OpenAI as primary
-    if (prefs.primaryProvider === 'openai' && prefs.openaiApiKey) {
+    const hasOpenAIKey = !!(prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+
+    // If user prefers OpenAI and key is present
+    if (prefs.primaryProvider === 'openai' && hasOpenAIKey) {
       statusIcon.src = '../../icons/openai-logo.png';
       statusIcon.alt = 'OpenAI';
       statusText.textContent = 'Using OpenAI API';
       statusLabel.textContent = 'CLOUD AI';
       statusLabel.style.background = '#e3f2fd';
       statusLabel.style.color = '#1976d2';
-    } else {
-      // Default to Gemini Nano or show it if available
+      return;
+    }
+
+    // Otherwise, check Gemini availability
+    let geminiAvailable = false;
+    try {
+      if (typeof LanguageModel !== 'undefined') {
+        const availability = await LanguageModel.availability();
+        geminiAvailable = (availability === 'readily' || availability === 'available');
+      }
+    } catch (e) {}
+
+    if (geminiAvailable) {
       statusIcon.src = '../../icons/gemini-logo.png';
       statusIcon.alt = 'Gemini';
       statusText.textContent = 'Powered by Gemini Nano';
       statusLabel.textContent = 'ON-DEVICE';
       statusLabel.style.background = '#e6f4ea';
       statusLabel.style.color = '#34a853';
+    } else if (hasOpenAIKey) {
+      // Gemini not available, but OpenAI key present
+      statusIcon.src = '../../icons/openai-logo.png';
+      statusIcon.alt = 'OpenAI';
+      statusText.textContent = 'OpenAI API Ready';
+      statusLabel.textContent = 'CLOUD AI';
+      statusLabel.style.background = '#e3f2fd';
+      statusLabel.style.color = '#1976d2';
+    } else {
+      // First-time / no providers configured
+      statusIcon.src = '../../icons/gemini-logo.png';
+      statusIcon.alt = 'Setup';
+      statusText.textContent = 'Set up AI';
+      statusLabel.textContent = 'SETUP';
+      statusLabel.style.background = '#eceff1';
+      statusLabel.style.color = '#546e7a';
     }
   }
 
@@ -284,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const availability = await LanguageModel.availability();
         
         if (availability === 'readily' || availability === 'available') {
-          geminiStatus.textContent = '✓ Gemini Nano is available and ready';
+          geminiStatus.textContent = '✓ Gemini Nano is available!';
           geminiStatus.style.color = '#0f9d58';
         } else {
           geminiStatus.textContent = `⚠️ Gemini Nano status: ${availability}`;
@@ -294,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         geminiStatus.textContent = '❌ Gemini Nano not available';
         geminiStatus.style.color = '#d93025';
       }
-      
+      a
       // Update the badge based on settings
       await updateAIStatusBadge();
     } catch (error) {
@@ -310,10 +387,17 @@ document.addEventListener('DOMContentLoaded', function() {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local') {
       // If primaryProvider or openaiApiKey changed, update the badge immediately
-      if (changes.primaryProvider || changes.openaiApiKey) {
+      if (changes.primaryProvider || changes.openaiApiKey || changes.openaiKeyEncrypted) {
         updateAIStatusBadge();
       }
     }
+  });
+
+  // Clicking the status badge opens Settings (useful for first-time setup)
+  document.querySelector('.status-badge').addEventListener('click', async () => {
+    settingsModal.classList.remove('hidden');
+    await loadSettings();
+    await checkGeminiStatus();
   });
 
 });

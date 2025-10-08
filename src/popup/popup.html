@@ -149,6 +149,17 @@
           </div>
 
           <div class="input-group">
+            <label for="encryption-passcode">Optional Passcode (for local encryption)</label>
+            <input 
+              type="password" 
+              id="encryption-passcode" 
+              placeholder="Set a passcode"
+              class="settings-input"
+            />
+            <span class="input-hint">We encrypt your API key with this passcode. You’ll re-enter it after restart.</span>
+          </div>
+
+          <div class="input-group">
             <label for="openai-model">Model</label>
             <select id="openai-model" class="settings-select">
               <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
