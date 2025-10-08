@@ -176,6 +176,7 @@ body {
   width: 16px;
   height: 16px;
   object-fit: contain;
+  transition: all 0.3s ease;
 }
 
 @keyframes pulse-dot {
@@ -194,6 +195,7 @@ body {
   color: #5f6368;
   font-weight: 500;
   letter-spacing: 0.3px;
+  transition: all 0.3s ease;
 }
 
 .status-badge-label {
@@ -205,6 +207,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  transition: all 0.3s ease;
 }
 
 /* Tooltip */
@@ -886,6 +889,7 @@ body {
   width: 14px;
   height: 14px;
   object-fit: contain;
+  transition: all 0.3s ease;
 }
 
 .sidebar-badge .status-text {
@@ -893,6 +897,7 @@ body {
   color: #5f6368;
   font-weight: 500;
   letter-spacing: 0.3px;
+  transition: all 0.3s ease;
 }
 
 .sidebar-badge .status-badge-label {
@@ -904,6 +909,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  transition: all 0.3s ease;
 }
 
 .hidden {

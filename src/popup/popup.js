@@ -251,6 +251,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Update AI status badge with appropriate icon and text
+  async function updateAIStatusBadge() {
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey']);
+    const statusIcon = document.querySelector('.status-indicator img');
+    const statusText = document.getElementById('ai-status-text');
+    const statusLabel = document.getElementById('ai-status-label');
+    
+    // Check if user has chosen OpenAI as primary
+    if (prefs.primaryProvider === 'openai' && prefs.openaiApiKey) {
+      statusIcon.src = '../../icons/openai-logo.png';
+      statusIcon.alt = 'OpenAI';
+      statusText.textContent = 'Using OpenAI API';
+      statusLabel.textContent = 'CLOUD AI';
+      statusLabel.style.background = '#e3f2fd';
+      statusLabel.style.color = '#1976d2';
+    } else {
+      // Default to Gemini Nano or show it if available
+      statusIcon.src = '../../icons/gemini-logo.png';
+      statusIcon.alt = 'Gemini';
+      statusText.textContent = 'Powered by Gemini Nano';
+      statusLabel.textContent = 'ON-DEVICE';
+      statusLabel.style.background = '#e6f4ea';
+      statusLabel.style.color = '#34a853';
+    }
+  }
+
   // Check Gemini Nano status
   async function checkGeminiStatus() {
     try {
@@ -260,31 +286,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (availability === 'readily') {
           geminiStatus.textContent = '✓ Gemini Nano is available and ready';
           geminiStatus.style.color = '#0f9d58';
-          document.getElementById('ai-status-text').textContent = 'Powered by Gemini Nano';
-          document.getElementById('ai-status-label').textContent = 'On-Device AI';
         } else {
           geminiStatus.textContent = `⚠️ Gemini Nano status: ${availability}`;
           geminiStatus.style.color = '#f29900';
-          
-          const hasApiKey = await chrome.storage.local.get(['openaiApiKey']);
-          if (hasApiKey.openaiApiKey) {
-            document.getElementById('ai-status-text').textContent = 'Using OpenAI API';
-            document.getElementById('ai-status-label').textContent = 'Cloud AI';
-          }
         }
       } else {
         geminiStatus.textContent = '❌ Gemini Nano not available';
         geminiStatus.style.color = '#d93025';
-        
-        const hasApiKey = await chrome.storage.local.get(['openaiApiKey']);
-        if (hasApiKey.openaiApiKey) {
-          document.getElementById('ai-status-text').textContent = 'Using OpenAI API';
-          document.getElementById('ai-status-label').textContent = 'Cloud AI';
-        } else {
-          document.getElementById('ai-status-text').textContent = 'No AI available';
-          document.getElementById('ai-status-label').textContent = 'Configure API';
-        }
       }
+      
+      // Update the badge based on settings
+      await updateAIStatusBadge();
     } catch (error) {
       geminiStatus.textContent = '❌ Error checking status';
       geminiStatus.style.color = '#d93025';
@@ -293,6 +305,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Check status on load
   checkGeminiStatus();
+
+  // Listen for storage changes and update badge in real-time
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local') {
+      // If primaryProvider or openaiApiKey changed, update the badge immediately
+      if (changes.primaryProvider || changes.openaiApiKey) {
+        updateAIStatusBadge();
+      }
+    }
+  });
 
 });
   

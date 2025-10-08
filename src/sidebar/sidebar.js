@@ -764,3 +764,44 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// Update AI status badge in sidebar with appropriate icon and text
+async function updateSidebarAIStatus() {
+  const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey']);
+  const statusIcon = document.getElementById('sidebar-ai-icon');
+  const statusText = document.getElementById('sidebar-status-text');
+  const statusLabel = document.getElementById('sidebar-status-label');
+  
+  if (!statusIcon || !statusText || !statusLabel) return;
+  
+  // Check if user has chosen OpenAI as primary
+  if (prefs.primaryProvider === 'openai' && prefs.openaiApiKey) {
+    statusIcon.src = '../../icons/openai-logo.png';
+    statusIcon.alt = 'OpenAI';
+    statusText.textContent = 'Using OpenAI API';
+    statusLabel.textContent = 'CLOUD AI';
+    statusLabel.style.background = '#e3f2fd';
+    statusLabel.style.color = '#1976d2';
+  } else {
+    // Default to Gemini Nano
+    statusIcon.src = '../../icons/gemini-logo.png';
+    statusIcon.alt = 'Gemini';
+    statusText.textContent = 'Powered by Gemini Nano';
+    statusLabel.textContent = 'ON-DEVICE';
+    statusLabel.style.background = '#e6f4ea';
+    statusLabel.style.color = '#34a853';
+  }
+}
+
+// Initialize status badge on load
+updateSidebarAIStatus();
+
+// Listen for storage changes and update badge in real-time
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local') {
+    // If primaryProvider or openaiApiKey changed, update the badge immediately
+    if (changes.primaryProvider || changes.openaiApiKey) {
+      updateSidebarAIStatus();
+    }
+  }
+});
