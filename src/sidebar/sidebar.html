@@ -63,15 +63,31 @@
         
         <!-- Empty state (shown if no action after timeout) -->
         <div id="empty-state" class="sidebar-empty-state hidden">
-          <div class="empty-icon">💡</div>
-          <h2>No results yet</h2>
-          <p>Highlight text or right-click an image to see AI-powered explanations here.</p>
-          <div class="empty-state-tips">
-            <p><strong>Quick tips:</strong></p>
-            <p>• Highlight text → Click Explain/Simplify/Translate/Proofread</p>
-            <p>• Right-click images → Describe with Overtab</p>
-            <p>• Use Voice Command for questions</p>
-            <p>• Press ESC to close tooltip</p>
+          <div class="empty-state-content">
+            <div class="empty-icon">💡</div>
+            <h2>Ready to help</h2>
+            <p class="empty-subtitle">Select text or images on any webpage to get started</p>
+            
+            <div class="empty-divider"></div>
+            
+            <div class="empty-features">
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Select text → Explain, simplify, translate, or proofread</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Right-click images → Get AI descriptions</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Use voice command → Ask questions instantly</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Links tab → Discover similar resources</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -150,15 +166,31 @@
       <div id="chat-tab" class="sidebar-tab-content">
         
         <div id="chat-empty-state" class="chat-empty-state">
-          <div class="empty-icon">💬</div>
-          <h2>Start a Conversation</h2>
-          <p>Get a result first, then click "Continue conversation" to chat with AI about it.</p>
-          <div class="empty-state-tips">
-            <p><strong>You can ask:</strong></p>
-            <p>• Follow-up questions</p>
-            <p>• Clarifications</p>
-            <p>• Related topics</p>
-            <p>• Examples or explanations</p>
+          <div class="empty-state-content">
+            <div class="empty-icon">💬</div>
+            <h2>Chat with AI</h2>
+            <p class="empty-subtitle">Get a result first, then continue the conversation here</p>
+            
+            <div class="empty-divider"></div>
+            
+            <div class="empty-features">
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Ask follow-up questions</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Request clarifications</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Explore related topics</span>
+              </div>
+              <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Get examples and deeper insights</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -203,10 +235,19 @@
         <div id="links-empty-state" class="links-empty-state">
           <div class="empty-icon">🔗</div>
           <h2>Discover Similar Resources</h2>
-          <p>Get AI-powered recommendations for resources similar to the current page.</p>
-          <button id="generate-links-btn" class="generate-links-btn">
-            ✨ Find Similar Links
-          </button>
+          <p>Find AI-powered recommendations for any topic you're researching.</p>
+          <div class="links-search-container">
+            <label for="links-topic-input" class="links-search-label">What would you like to find links about?</label>
+            <input 
+              type="text" 
+              id="links-topic-input" 
+              class="links-topic-input" 
+              placeholder="E.g., Machine Learning, React Tutorial, Climate Change..."
+            />
+            <button id="generate-links-btn" class="generate-links-btn">
+              ✨ Find Links
+            </button>
+          </div>
         </div>
 
         <div id="links-loading-state" class="links-loading-state hidden">
@@ -224,13 +265,18 @@
         <div id="links-display" class="links-display hidden">
           <div class="links-header">
             <h3>Similar Resources</h3>
-            <button id="refresh-links-btn" class="refresh-links-btn" title="Generate new links">
+            <button id="refresh-links-btn" class="refresh-links-btn" title="Refresh links">
               🔄
             </button>
           </div>
           <div class="links-context">
-            <span class="links-context-label">Based on:</span>
-            <span id="links-page-title" class="links-page-title"></span>
+            <div class="links-context-content">
+              <span class="links-context-label">Topic:</span>
+              <span id="links-page-title" class="links-page-title"></span>
+            </div>
+            <button id="edit-links-topic-btn" class="edit-links-topic-btn" title="Change topic">
+              ✏️ Edit
+            </button>
           </div>
           <div id="links-list" class="links-list">
             <!-- Links will be inserted here -->

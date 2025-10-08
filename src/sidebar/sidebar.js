@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const tabContents = document.querySelectorAll('.sidebar-tab-content');
   
   tabs.forEach(tab => {
-    tab.addEventListener('click', function() {
+    tab.addEventListener('click', async function() {
       const targetTab = this.getAttribute('data-tab');
       
       tabs.forEach(t => t.classList.remove('active'));
@@ -61,6 +61,21 @@ document.addEventListener('DOMContentLoaded', function() {
       
       this.classList.add('active');
       document.getElementById(targetTab + '-tab').classList.add('active');
+      
+      // Auto-fill topic input when Links tab is opened
+      if (targetTab === 'links') {
+        const topicInput = document.getElementById('links-topic-input');
+        if (topicInput && !topicInput.value) {
+          try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab && tab.title) {
+              topicInput.value = tab.title;
+            }
+          } catch (err) {
+            console.log('Could not get current tab title:', err);
+          }
+        }
+      }
     });
   });
   
@@ -85,7 +100,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const generateLinksBtn = document.getElementById('generate-links-btn');
   if (generateLinksBtn) {
     generateLinksBtn.addEventListener('click', async function() {
-      await generateSimilarLinksForPage();
+      const topicInput = document.getElementById('links-topic-input');
+      const customTopic = topicInput.value.trim();
+      await generateSimilarLinksForPage(customTopic);
+    });
+  }
+  
+  // Links tab - Topic input - press Enter to generate
+  const topicInput = document.getElementById('links-topic-input');
+  if (topicInput) {
+    topicInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const customTopic = this.value.trim();
+        generateSimilarLinksForPage(customTopic);
+      }
     });
   }
   
@@ -93,7 +122,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const refreshLinksBtn = document.getElementById('refresh-links-btn');
   if (refreshLinksBtn) {
     refreshLinksBtn.addEventListener('click', async function() {
-      await generateSimilarLinksForPage();
+      // Get the current topic and regenerate
+      const currentTopic = document.getElementById('links-page-title').textContent;
+      await generateSimilarLinksForPage(currentTopic);
+    });
+  }
+  
+  // Links tab - Edit Topic button
+  const editLinksTopicBtn = document.getElementById('edit-links-topic-btn');
+  if (editLinksTopicBtn) {
+    editLinksTopicBtn.addEventListener('click', function() {
+      const currentTopic = document.getElementById('links-page-title').textContent;
+      const topicInput = document.getElementById('links-topic-input');
+      topicInput.value = currentTopic;
+      showLinksEmptyState();
+      topicInput.focus();
     });
   }
   
@@ -842,38 +885,48 @@ async function updateSidebarAIStatus() {
 }
 
 // Similar Links functionality
-async function generateSimilarLinksForPage() {
+async function generateSimilarLinksForPage(customTopic = '') {
   try {
     // Show loading state
     showLinksLoadingState();
     
-    // Get current tab info
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab) {
-      throw new Error('Could not get current tab information');
+    let pageTitle, pageDescription, pageUrl;
+    
+    // If custom topic is provided, use it directly
+    if (customTopic) {
+      pageTitle = customTopic;
+      pageDescription = '';
+      pageUrl = '';
+      console.log('🔗 Generating links for custom topic:', customTopic);
+    } else {
+      // Otherwise, get current tab info
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab) {
+        throw new Error('Could not get current tab information');
+      }
+      
+      // Extract page metadata
+      pageTitle = tab.title || 'Current Page';
+      pageUrl = tab.url || '';
+      
+      // Get page description from meta tags if available
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const metaDesc = document.querySelector('meta[name="description"]');
+            const metaOgDesc = document.querySelector('meta[property="og:description"]');
+            return metaDesc?.content || metaOgDesc?.content || '';
+          }
+        });
+        pageDescription = result?.result || '';
+      } catch (err) {
+        console.log('Could not extract page description:', err);
+        pageDescription = '';
+      }
+      
+      console.log('🔗 Generating links for page:', { pageTitle, pageDescription, pageUrl });
     }
-    
-    // Extract page metadata
-    const pageTitle = tab.title || 'Current Page';
-    const pageUrl = tab.url || '';
-    
-    // Get page description from meta tags if available
-    let pageDescription = '';
-    try {
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          const metaDesc = document.querySelector('meta[name="description"]');
-          const metaOgDesc = document.querySelector('meta[property="og:description"]');
-          return metaDesc?.content || metaOgDesc?.content || '';
-        }
-      });
-      pageDescription = result?.result || '';
-    } catch (err) {
-      console.log('Could not extract page description:', err);
-    }
-    
-    console.log('🔗 Generating links for:', { pageTitle, pageDescription, pageUrl });
     
     // Generate similar links using AI (function from ai-helper.js)
     const aiResponse = await generateSimilarLinks(pageTitle, pageDescription, pageUrl);
@@ -983,16 +1036,38 @@ function showLinksError(message) {
     <div class="empty-icon">⚠️</div>
     <h2>Error</h2>
     <p>${escapeHtml(message)}</p>
-    <button id="generate-links-btn" class="generate-links-btn">
-      🔄 Try Again
-    </button>
+    <div class="links-search-container">
+      <label for="links-topic-input" class="links-search-label">What would you like to find links about?</label>
+      <input 
+        type="text" 
+        id="links-topic-input" 
+        class="links-topic-input" 
+        placeholder="E.g., Machine Learning, React Tutorial, Climate Change..."
+      />
+      <button id="generate-links-btn" class="generate-links-btn">
+        🔄 Try Again
+      </button>
+    </div>
   `;
   
-  // Re-attach event listener
+  // Re-attach event listeners
   const retryBtn = document.getElementById('generate-links-btn');
+  const topicInput = document.getElementById('links-topic-input');
+  
   if (retryBtn) {
     retryBtn.addEventListener('click', async function() {
-      await generateSimilarLinksForPage();
+      const customTopic = topicInput.value.trim();
+      await generateSimilarLinksForPage(customTopic);
+    });
+  }
+  
+  if (topicInput) {
+    topicInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const customTopic = this.value.trim();
+        generateSimilarLinksForPage(customTopic);
+      }
     });
   }
 }

@@ -712,13 +712,19 @@ IMPORTANT RULES:
 6. NO numbered lists, NO markdown, JUST the formatted entries
 7. One entry per line`;
 
-    const userPrompt = `Find 7-10 similar resources related to this webpage:
+    const userPrompt = pageUrl 
+      ? `Find 7-10 similar resources related to this webpage:
 
 Title: ${pageTitle}
 Description: ${pageDescription || 'N/A'}
 URL: ${pageUrl}
 
-Recommend similar, high-quality resources that would be valuable to someone interested in this topic. Include official docs, tutorials, tools, communities, and educational content.`;
+Recommend similar, high-quality resources that would be valuable to someone interested in this topic. Include official docs, tutorials, tools, communities, and educational content.`
+      : `Find 7-10 high-quality resources related to this topic:
+
+Topic: ${pageTitle}
+
+Recommend valuable resources including official documentation, tutorials, tools, communities, articles, and educational content that would help someone learn about or work with this topic.`;
 
     let response;
     
