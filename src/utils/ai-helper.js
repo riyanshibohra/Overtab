@@ -1,9 +1,62 @@
 // Overtab AI Helper
-// Chrome Built-in AI APIs with demo mode fallback
+// Chrome Built-in AI APIs with OpenAI fallback
 
 // Performance logger
 function logTiming(label, startTime) {
   console.log(`⏱️ ${label}: ${Date.now() - startTime}ms`);
+}
+
+// OpenAI API Helper Functions
+async function getOpenAISettings() {
+  try {
+    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature']);
+    return {
+      apiKey: settings.openaiApiKey || null,
+      model: settings.openaiModel || 'gpt-4o-mini',
+      temperature: settings.openaiTemperature !== undefined ? settings.openaiTemperature : 0.7
+    };
+  } catch (error) {
+    console.error('Error getting OpenAI settings:', error);
+    return { apiKey: null, model: 'gpt-4o-mini', temperature: 0.7 };
+  }
+}
+
+async function callOpenAI(systemPrompt, userPrompt, maxTokens = 500) {
+  const settings = await getOpenAISettings();
+  
+  if (!settings.apiKey) {
+    throw new Error('OpenAI API key not configured. Please add your API key in settings.');
+  }
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.apiKey}`
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: settings.temperature,
+        max_tokens: maxTokens
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'OpenAI API error');
+    }
+    
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    throw error;
+  }
 }
 
 async function checkAIAvailability() {
@@ -100,9 +153,22 @@ Key points:
           return result;
         } catch (err) {
           console.error('🔴 [EXPLAIN] Error:', err.message);
-          throw err;
         }
       }
+    }
+    
+    // Try OpenAI fallback
+    try {
+      console.log('🟢 [EXPLAIN] Trying OpenAI fallback');
+      const result = await callOpenAI(
+        'You are a helpful AI assistant that explains text clearly and concisely.',
+        `Explain the following text. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:\n\n"${text.substring(0, 3000)}"`,
+        600
+      );
+      logTiming('[EXPLAIN] Success (OpenAI)', startTime);
+      return result;
+    } catch (err) {
+      console.error('🔴 [EXPLAIN] OpenAI error:', err.message);
     }
     
     console.log('🟡 [EXPLAIN] Using demo mode');
@@ -166,9 +232,22 @@ Provide a simplified version that is:
           return result;
         } catch (err) {
           console.error('🔴 [SIMPLIFY] Error:', err.message);
-          throw err;
         }
       }
+    }
+    
+    // Try OpenAI fallback
+    try {
+      console.log('🟢 [SIMPLIFY] Trying OpenAI fallback');
+      const result = await callOpenAI(
+        'You are a helpful AI assistant that simplifies complex text into easy-to-understand language.',
+        `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand:\n\n"${text.substring(0, 3000)}"`,
+        600
+      );
+      logTiming('[SIMPLIFY] Success (OpenAI)', startTime);
+      return result;
+    } catch (err) {
+      console.error('🔴 [SIMPLIFY] OpenAI error:', err.message);
     }
     
     console.log('🟡 [SIMPLIFY] Using demo mode');
@@ -237,6 +316,20 @@ async function translateText(text, targetLanguage = 'es') {
       }
     }
     
+    // Try OpenAI fallback
+    try {
+      console.log('🟢 [TRANSLATE] Trying OpenAI fallback');
+      const result = await callOpenAI(
+        `You are a professional translator that translates English to ${languageNames[targetLanguage]}.`,
+        `Translate the following text to ${languageNames[targetLanguage]}. Only provide the translation, no explanations:\n\n"${text.substring(0, 3000)}"`,
+        800
+      );
+      logTiming('[TRANSLATE] Success (OpenAI)', startTime);
+      return result;
+    } catch (err) {
+      console.error('🔴 [TRANSLATE] OpenAI error:', err.message);
+    }
+    
     // Demo mode fallback (only if API not available)
     console.log('🟡 [TRANSLATE] Using demo mode (API not available)');
     await simulateDelay();
@@ -273,6 +366,20 @@ async function proofreadText(text) {
         console.error('🔴 [PROOFREAD] API not available:', availability);
         throw new Error('Proofreader API is not available');
       }
+    }
+    
+    // Try OpenAI fallback
+    try {
+      console.log('🟢 [PROOFREAD] Trying OpenAI fallback');
+      const result = await callOpenAI(
+        'You are a professional proofreader and grammar checker.',
+        `Proofread and correct the following text for grammar, spelling, and punctuation errors. Only provide the corrected text, no explanations:\n\n"${text.substring(0, 3000)}"`,
+        800
+      );
+      logTiming('[PROOFREAD] Success (OpenAI)', startTime);
+      return result;
+    } catch (err) {
+      console.error('🔴 [PROOFREAD] OpenAI error:', err.message);
     }
     
     // Demo mode fallback
@@ -319,6 +426,20 @@ async function promptAI(prompt) {
           throw err;
         }
       }
+    }
+    
+    // Try OpenAI fallback
+    try {
+      console.log('🟢 [PROMPT] Trying OpenAI fallback');
+      const result = await callOpenAI(
+        'You are a helpful AI assistant that provides clear and accurate answers to questions.',
+        prompt,
+        600
+      );
+      logTiming('[PROMPT] Success (OpenAI)', startTime);
+      return result;
+    } catch (err) {
+      console.error('🔴 [PROMPT] OpenAI error:', err.message);
     }
     
     console.log('🟡 [PROMPT] Using demo mode');

@@ -517,13 +517,17 @@ async function sendChatMessage() {
   
   try {
     // Build conversation context
-    const systemPrompt = `You are a helpful AI assistant. The user previously asked you to ${chatContext.resultType} some text. Here's the context:
+    const systemPrompt = `You are a helpful AI assistant. The user previously asked you to ${chatContext.resultType} some text. Here's the FULL CONTEXT you need to remember:
 
-Original text: "${chatContext.sourceText.substring(0, 300)}${chatContext.sourceText.length > 300 ? '...' : ''}"
+ORIGINAL TEXT: "${chatContext.sourceText}"
 
-Your previous ${chatContext.resultType}: "${chatContext.result.substring(0, 300)}${chatContext.result.length > 300 ? '...' : ''}"
+YOUR PREVIOUS RESPONSE: "${chatContext.result.substring(0, 500)}${chatContext.result.length > 500 ? '...' : ''}"
 
-CRITICAL: Keep responses VERY SHORT. Maximum 2-3 sentences OR 3 bullet points. Be concise and direct. No long explanations or extensive details.`;
+IMPORTANT: 
+- Use this context to answer follow-up questions about the content
+- If they ask about names, places, or topics mentioned in the original text, refer to this context
+- Keep responses VERY SHORT: Maximum 2-3 sentences OR 3 bullet points(IMPORTANT)
+- Be concise and direct`;
 
     // Build full prompt with history
     let fullPrompt = systemPrompt + '\n\n';
@@ -547,20 +551,63 @@ CRITICAL: Keep responses VERY SHORT. Maximum 2-3 sentences OR 3 bullet points. B
       // Use persistent session
       response = await chatSession.prompt(message);
     } else if (typeof LanguageModel !== 'undefined') {
-      // Create new session
-      const availability = await LanguageModel.availability();
-      if (availability === 'readily' || availability === 'available') {
-        const tempSession = await LanguageModel.create({
-          temperature: 0.8,
-          topK: 40
-        });
-        response = await tempSession.prompt(fullPrompt);
-        tempSession.destroy();
-      } else {
-        throw new Error('Language model not available');
+      // Try creating a new Gemini Nano session
+      try {
+        const availability = await LanguageModel.availability();
+        if (availability === 'readily' || availability === 'available') {
+          const tempSession = await LanguageModel.create({
+            temperature: 0.8,
+            topK: 40
+          });
+          response = await tempSession.prompt(fullPrompt);
+          tempSession.destroy();
+        } else {
+          throw new Error('Language model not available');
+        }
+      } catch (err) {
+        console.log('Gemini Nano failed, trying OpenAI fallback');
+        // Fall through to OpenAI
       }
-    } else {
-      throw new Error('LanguageModel API not available');
+    }
+    
+    // Try OpenAI fallback if Gemini Nano is not available
+    if (!response) {
+      try {
+        const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature']);
+        
+        if (!settings.openaiApiKey) {
+          throw new Error('No AI available. Please configure OpenAI API in settings.');
+        }
+        
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: settings.openaiModel || 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...chatHistory.slice(-10).map(h => ({ role: h.role, content: h.text })),
+              { role: 'user', content: message }
+            ],
+            temperature: settings.openaiTemperature || 0.8,
+            max_tokens: 500
+          })
+        });
+        
+        if (!openaiResponse.ok) {
+          const error = await openaiResponse.json();
+          throw new Error(error.error?.message || 'OpenAI API error');
+        }
+        
+        const data = await openaiResponse.json();
+        response = data.choices[0].message.content;
+      } catch (err) {
+        console.error('OpenAI error:', err);
+        throw new Error(err.message || 'No AI available');
+      }
     }
     
     // Remove loading indicator and add real response

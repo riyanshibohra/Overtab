@@ -48,6 +48,16 @@
         </div>
       </button>
 
+      <button id="settings-btn" class="action-button">
+        <div class="button-icon-wrapper">
+          <span class="button-icon">⚙️</span>
+        </div>
+        <div class="button-content">
+          <span class="button-text">Settings</span>
+          <span class="button-description">Configure AI & API</span>
+        </div>
+      </button>
+
     </div>
 
     <div class="feature-toggle">
@@ -64,11 +74,87 @@
         <div class="status-indicator">
           <img src="../../icons/gemini-icon.svg" alt="Gemini" />
         </div>
-        <span class="status-text">Powered by Gemini Nano</span>
+        <span class="status-text" id="ai-status-text">Powered by Gemini Nano</span>
       </div>
-      <span class="status-badge-label">On-Device AI</span>
+      <span class="status-badge-label" id="ai-status-label">On-Device AI</span>
     </div>
 
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="settings-modal hidden">
+    <div class="settings-modal-content">
+      <div class="settings-header">
+        <h2>⚙️ Settings</h2>
+        <button id="close-settings" class="close-settings-btn">✕</button>
+      </div>
+
+      <div class="settings-body">
+        
+        <!-- AI Provider Section -->
+        <div class="settings-section">
+          <h3>AI Provider</h3>
+          <p class="settings-description">Configure your AI backend</p>
+          
+          <div class="ai-status-info">
+            <span id="gemini-status">🔍 Checking Gemini Nano availability...</span>
+          </div>
+        </div>
+
+        <!-- OpenAI API Section -->
+        <div class="settings-section">
+          <h3>OpenAI API (Fallback)</h3>
+          <p class="settings-description">Used when Gemini Nano is unavailable</p>
+          
+          <div class="input-group">
+            <label for="openai-api-key">API Key</label>
+            <input 
+              type="password" 
+              id="openai-api-key" 
+              placeholder="sk-..."
+              class="settings-input"
+            />
+            <span class="input-hint">🔒 Stored locally on your device</span>
+          </div>
+
+          <div class="input-group">
+            <label for="openai-model">Model</label>
+            <select id="openai-model" class="settings-select">
+              <option value="gpt-4o-mini">GPT-4o Mini (Fast & Cheap)</option>
+              <option value="gpt-4o">GPT-4o (Best Quality)</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fastest)</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="openai-temperature">Temperature: <span id="temp-value">0.7</span></label>
+            <input 
+              type="range" 
+              id="openai-temperature" 
+              min="0" 
+              max="1" 
+              step="0.1" 
+              value="0.7"
+              class="settings-slider"
+            />
+            <span class="input-hint">Lower = More focused, Higher = More creative</span>
+          </div>
+
+          <button id="test-api-key" class="test-api-btn">Test API Key</button>
+          <span id="api-test-result" class="api-test-result"></span>
+        </div>
+
+        <!-- Privacy Notice -->
+        <div class="settings-section privacy-notice">
+          <p>🔒 Your API key is stored locally on your device and never shared with us or anyone else.</p>
+        </div>
+
+      </div>
+
+      <div class="settings-footer">
+        <button id="save-settings" class="save-settings-btn">Save Settings</button>
+      </div>
+    </div>
   </div>
 
   <script src="../utils/ai-helper.js"></script>

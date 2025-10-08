@@ -101,5 +101,169 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Settings Modal Logic
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsModal = document.getElementById('settings-modal');
+  const closeSettingsBtn = document.getElementById('close-settings');
+  const saveSettingsBtn = document.getElementById('save-settings');
+  const testApiBtn = document.getElementById('test-api-key');
+  
+  const apiKeyInput = document.getElementById('openai-api-key');
+  const modelSelect = document.getElementById('openai-model');
+  const temperatureSlider = document.getElementById('openai-temperature');
+  const tempValue = document.getElementById('temp-value');
+  const geminiStatus = document.getElementById('gemini-status');
+  const apiTestResult = document.getElementById('api-test-result');
+
+  // Open settings
+  settingsBtn.addEventListener('click', async function() {
+    settingsModal.classList.remove('hidden');
+    await loadSettings();
+    await checkGeminiStatus();
+  });
+
+  // Close settings
+  closeSettingsBtn.addEventListener('click', function() {
+    settingsModal.classList.add('hidden');
+  });
+
+  // Close modal when clicking outside
+  settingsModal.addEventListener('click', function(e) {
+    if (e.target === settingsModal) {
+      settingsModal.classList.add('hidden');
+    }
+  });
+
+  // Temperature slider
+  temperatureSlider.addEventListener('input', function() {
+    tempValue.textContent = this.value;
+  });
+
+  // Load settings
+  async function loadSettings() {
+    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature']);
+    
+    if (settings.openaiApiKey) {
+      apiKeyInput.value = settings.openaiApiKey;
+    }
+    
+    if (settings.openaiModel) {
+      modelSelect.value = settings.openaiModel;
+    }
+    
+    if (settings.openaiTemperature !== undefined) {
+      temperatureSlider.value = settings.openaiTemperature;
+      tempValue.textContent = settings.openaiTemperature;
+    }
+  }
+
+  // Save settings
+  saveSettingsBtn.addEventListener('click', async function() {
+    const apiKey = apiKeyInput.value.trim();
+    const model = modelSelect.value;
+    const temperature = parseFloat(temperatureSlider.value);
+    
+    await chrome.storage.local.set({
+      openaiApiKey: apiKey,
+      openaiModel: model,
+      openaiTemperature: temperature
+    });
+    
+    // Show success message
+    saveSettingsBtn.textContent = '✓ Saved!';
+    setTimeout(() => {
+      saveSettingsBtn.textContent = 'Save Settings';
+      settingsModal.classList.add('hidden');
+    }, 1000);
+  });
+
+  // Test API key
+  testApiBtn.addEventListener('click', async function() {
+    const apiKey = apiKeyInput.value.trim();
+    
+    if (!apiKey) {
+      apiTestResult.textContent = '❌ Please enter an API key';
+      apiTestResult.className = 'api-test-result error';
+      return;
+    }
+    
+    testApiBtn.disabled = true;
+    testApiBtn.textContent = 'Testing...';
+    apiTestResult.textContent = '';
+    
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [{role: 'user', content: 'Say hello'}],
+          max_tokens: 10
+        })
+      });
+      
+      if (response.ok) {
+        apiTestResult.textContent = '✓ API key is valid!';
+        apiTestResult.className = 'api-test-result success';
+      } else {
+        const error = await response.json();
+        apiTestResult.textContent = `❌ ${error.error?.message || 'Invalid API key'}`;
+        apiTestResult.className = 'api-test-result error';
+      }
+    } catch (error) {
+      apiTestResult.textContent = '❌ Network error';
+      apiTestResult.className = 'api-test-result error';
+    } finally {
+      testApiBtn.disabled = false;
+      testApiBtn.textContent = 'Test API Key';
+    }
+  });
+
+  // Check Gemini Nano status
+  async function checkGeminiStatus() {
+    try {
+      if (typeof LanguageModel !== 'undefined') {
+        const availability = await LanguageModel.availability();
+        
+        if (availability === 'readily') {
+          geminiStatus.textContent = '✓ Gemini Nano is available and ready';
+          geminiStatus.style.color = '#0f9d58';
+          document.getElementById('ai-status-text').textContent = 'Powered by Gemini Nano';
+          document.getElementById('ai-status-label').textContent = 'On-Device AI';
+        } else {
+          geminiStatus.textContent = `⚠️ Gemini Nano status: ${availability}`;
+          geminiStatus.style.color = '#f29900';
+          
+          const hasApiKey = await chrome.storage.local.get(['openaiApiKey']);
+          if (hasApiKey.openaiApiKey) {
+            document.getElementById('ai-status-text').textContent = 'Using OpenAI API';
+            document.getElementById('ai-status-label').textContent = 'Cloud AI';
+          }
+        }
+      } else {
+        geminiStatus.textContent = '❌ Gemini Nano not available';
+        geminiStatus.style.color = '#d93025';
+        
+        const hasApiKey = await chrome.storage.local.get(['openaiApiKey']);
+        if (hasApiKey.openaiApiKey) {
+          document.getElementById('ai-status-text').textContent = 'Using OpenAI API';
+          document.getElementById('ai-status-label').textContent = 'Cloud AI';
+        } else {
+          document.getElementById('ai-status-text').textContent = 'No AI available';
+          document.getElementById('ai-status-label').textContent = 'Configure API';
+        }
+      }
+    } catch (error) {
+      geminiStatus.textContent = '❌ Error checking status';
+      geminiStatus.style.color = '#d93025';
+    }
+  }
+
+  // Check status on load
+  checkGeminiStatus();
+
 });
   
