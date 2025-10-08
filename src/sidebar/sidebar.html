@@ -34,6 +34,10 @@
         <span class="tab-icon">💬</span>
         <span class="tab-label">Chat</span>
       </button>
+      <button class="sidebar-tab" data-tab="links">
+        <span class="tab-icon">🔗</span>
+        <span class="tab-label">Links</span>
+      </button>
       <button class="sidebar-tab" data-tab="history">
         <span class="tab-icon">📜</span>
         <span class="tab-label">History</span>
@@ -194,6 +198,47 @@
 
       </div>
 
+      <div id="links-tab" class="sidebar-tab-content">
+        
+        <div id="links-empty-state" class="links-empty-state">
+          <div class="empty-icon">🔗</div>
+          <h2>Discover Similar Resources</h2>
+          <p>Get AI-powered recommendations for resources similar to the current page.</p>
+          <button id="generate-links-btn" class="generate-links-btn">
+            ✨ Find Similar Links
+          </button>
+        </div>
+
+        <div id="links-loading-state" class="links-loading-state hidden">
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">
+              <h4>Finding similar resources...</h4>
+              <div class="loading-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="links-display" class="links-display hidden">
+          <div class="links-header">
+            <h3>Similar Resources</h3>
+            <button id="refresh-links-btn" class="refresh-links-btn" title="Generate new links">
+              🔄
+            </button>
+          </div>
+          <div class="links-context">
+            <span class="links-context-label">Based on:</span>
+            <span id="links-page-title" class="links-page-title"></span>
+          </div>
+          <div id="links-list" class="links-list">
+            <!-- Links will be inserted here -->
+          </div>
+        </div>
+
+      </div>
+
       <div id="history-tab" class="sidebar-tab-content">
         
         <div id="history-empty-state" class="history-empty-state">
@@ -225,6 +270,7 @@
   </div>
 
   <script src="../utils/storage-manager.js"></script>
+  <script src="../utils/ai-helper.js"></script>
   <script src="sidebar.js"></script>
 </body>
 </html>

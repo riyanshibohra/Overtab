@@ -81,6 +81,22 @@ document.addEventListener('DOMContentLoaded', function() {
   
   loadHistory();
   
+  // Links tab - Generate Links button
+  const generateLinksBtn = document.getElementById('generate-links-btn');
+  if (generateLinksBtn) {
+    generateLinksBtn.addEventListener('click', async function() {
+      await generateSimilarLinksForPage();
+    });
+  }
+  
+  // Links tab - Refresh Links button
+  const refreshLinksBtn = document.getElementById('refresh-links-btn');
+  if (refreshLinksBtn) {
+    refreshLinksBtn.addEventListener('click', async function() {
+      await generateSimilarLinksForPage();
+    });
+  }
+  
   // Source toggle
   const sourceToggle = document.getElementById('source-toggle');
   if (sourceToggle) {
@@ -790,6 +806,162 @@ async function updateSidebarAIStatus() {
     statusLabel.textContent = 'ON-DEVICE';
     statusLabel.style.background = '#e6f4ea';
     statusLabel.style.color = '#34a853';
+  }
+}
+
+// Similar Links functionality
+async function generateSimilarLinksForPage() {
+  try {
+    // Show loading state
+    showLinksLoadingState();
+    
+    // Get current tab info
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) {
+      throw new Error('Could not get current tab information');
+    }
+    
+    // Extract page metadata
+    const pageTitle = tab.title || 'Current Page';
+    const pageUrl = tab.url || '';
+    
+    // Get page description from meta tags if available
+    let pageDescription = '';
+    try {
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const metaDesc = document.querySelector('meta[name="description"]');
+          const metaOgDesc = document.querySelector('meta[property="og:description"]');
+          return metaDesc?.content || metaOgDesc?.content || '';
+        }
+      });
+      pageDescription = result?.result || '';
+    } catch (err) {
+      console.log('Could not extract page description:', err);
+    }
+    
+    console.log('🔗 Generating links for:', { pageTitle, pageDescription, pageUrl });
+    
+    // Generate similar links using AI (function from ai-helper.js)
+    const aiResponse = await generateSimilarLinks(pageTitle, pageDescription, pageUrl);
+    
+    console.log('🔗 AI Response:', aiResponse);
+    
+    // Parse the response
+    const links = parseSimilarLinksResponse(aiResponse);
+    
+    if (links.length === 0) {
+      throw new Error('No links were generated. Please try again.');
+    }
+    
+    // Display the links
+    displaySimilarLinks(links, pageTitle);
+    
+  } catch (error) {
+    console.error('Error generating similar links:', error);
+    showLinksError(error.message || 'Failed to generate links. Please try again.');
+  }
+}
+
+function parseSimilarLinksResponse(response) {
+  const links = [];
+  const lines = response.split('\n').filter(line => line.trim().length > 0);
+  
+  for (const line of lines) {
+    // Skip demo mode prefix if present
+    if (line.startsWith('Demo mode:')) continue;
+    
+    // Try to parse the line as TITLE|||URL|||DESCRIPTION
+    const parts = line.split('|||');
+    if (parts.length === 3) {
+      const title = parts[0].trim().replace(/^\d+\.\s*/, ''); // Remove numbering if present
+      const url = parts[1].trim();
+      const description = parts[2].trim();
+      
+      // Validate URL
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        links.push({ title, url, description });
+      }
+    } else {
+      // Try to parse markdown-style links or other formats
+      // Format: [Title](URL) - Description
+      const markdownMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)\s*-?\s*(.*)/);
+      if (markdownMatch) {
+        const title = markdownMatch[1].trim().replace(/^\d+\.\s*/, '');
+        const url = markdownMatch[2].trim();
+        const description = markdownMatch[3].trim() || 'No description available';
+        
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          links.push({ title, url, description });
+        }
+      }
+    }
+  }
+  
+  return links;
+}
+
+function showLinksLoadingState() {
+  document.getElementById('links-empty-state').classList.add('hidden');
+  document.getElementById('links-loading-state').classList.remove('hidden');
+  document.getElementById('links-display').classList.add('hidden');
+}
+
+function showLinksEmptyState() {
+  document.getElementById('links-empty-state').classList.remove('hidden');
+  document.getElementById('links-loading-state').classList.add('hidden');
+  document.getElementById('links-display').classList.add('hidden');
+}
+
+function displaySimilarLinks(links, pageTitle) {
+  // Update page title context
+  document.getElementById('links-page-title').textContent = pageTitle;
+  
+  // Generate links HTML
+  const linksList = document.getElementById('links-list');
+  linksList.innerHTML = links.map((link, index) => `
+    <div class="link-item">
+      <div class="link-number">${index + 1}</div>
+      <div class="link-content">
+        <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer" class="link-title">
+          ${escapeHtml(link.title)}
+          <svg class="link-external-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M10 6.5V10H2V2H5.5M7 2H10M10 2V5M10 2L5 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <p class="link-description">${escapeHtml(link.description)}</p>
+      </div>
+    </div>
+  `).join('');
+  
+  // Show the display
+  document.getElementById('links-empty-state').classList.add('hidden');
+  document.getElementById('links-loading-state').classList.add('hidden');
+  document.getElementById('links-display').classList.remove('hidden');
+}
+
+function showLinksError(message) {
+  const emptyState = document.getElementById('links-empty-state');
+  emptyState.classList.remove('hidden');
+  document.getElementById('links-loading-state').classList.add('hidden');
+  document.getElementById('links-display').classList.add('hidden');
+  
+  emptyState.innerHTML = `
+    <div class="empty-icon">⚠️</div>
+    <h2>Error</h2>
+    <p>${escapeHtml(message)}</p>
+    <button id="generate-links-btn" class="generate-links-btn">
+      🔄 Try Again
+    </button>
+  `;
+  
+  // Re-attach event listener
+  const retryBtn = document.getElementById('generate-links-btn');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', async function() {
+      await generateSimilarLinksForPage();
+    });
   }
 }
 

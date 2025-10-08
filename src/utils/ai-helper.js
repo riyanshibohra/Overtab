@@ -585,6 +585,16 @@ function demoResponse(type, params = {}) {
     case 'image': {
       return 'Demo mode: Example image description. Enable AI in Settings for real analysis.';
     }
+    case 'similarLinks': {
+      const pageTitle = params.pageTitle || 'this topic';
+      return `MDN Web Docs - JavaScript Guide|||https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide|||Comprehensive JavaScript documentation and tutorials for developers of all levels.
+W3Schools JavaScript Tutorial|||https://www.w3schools.com/js/|||Interactive JavaScript tutorials with examples and exercises to learn web development.
+JavaScript.info - The Modern JavaScript Tutorial|||https://javascript.info/|||In-depth modern JavaScript tutorial covering fundamentals and advanced topics.
+freeCodeCamp|||https://www.freecodecamp.org/|||Free coding bootcamp with interactive lessons and projects.
+Stack Overflow - JavaScript|||https://stackoverflow.com/questions/tagged/javascript|||Community Q&A platform for JavaScript developers to get help and share knowledge.
+GitHub - Awesome JavaScript|||https://github.com/sorrycc/awesome-javascript|||Curated list of awesome JavaScript libraries, resources and tools.
+Eloquent JavaScript|||https://eloquentjavascript.net/|||Free online book teaching JavaScript programming from basics to advanced concepts.`;
+    }
     case 'prompt':
     default: {
       const q = (params.prompt || '').trim().slice(0, 120);
@@ -677,6 +687,108 @@ async function promptAI(prompt) {
     
   } catch (error) {
     console.error('Prompt AI error:', error);
+    throw error;
+  }
+}
+
+// Generate Similar Links - Recommend related resources based on page content
+async function generateSimilarLinks(pageTitle, pageDescription, pageUrl) {
+  const startTime = Date.now();
+  console.log('🔗 [SIMILAR_LINKS] Starting... (title:', pageTitle, ')');
+  
+  try {
+    // Build the prompt for AI
+    const systemPrompt = `You are an expert research assistant that recommends high-quality, relevant online resources. Your task is to suggest 7-10 similar resources based on the given webpage information.
+
+IMPORTANT RULES:
+1. Provide ONLY real, well-known, reputable websites and resources
+2. Focus on educational, official, and authoritative sources
+3. Include variety: articles, documentation, tools, communities, tutorials
+4. Each recommendation must include:
+   - Title: Clear, descriptive title
+   - URL: Full, valid URL (must start with https://)
+   - Description: 1-2 sentence description of what the resource offers
+5. Format EXACTLY as: TITLE|||URL|||DESCRIPTION (separated by |||)
+6. NO numbered lists, NO markdown, JUST the formatted entries
+7. One entry per line`;
+
+    const userPrompt = `Find 7-10 similar resources related to this webpage:
+
+Title: ${pageTitle}
+Description: ${pageDescription || 'N/A'}
+URL: ${pageUrl}
+
+Recommend similar, high-quality resources that would be valuable to someone interested in this topic. Include official docs, tutorials, tools, communities, and educational content.`;
+
+    let response;
+    
+    // Respect primary provider = OpenAI
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted', 'fallbackPreference']);
+    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && (prefs.openaiApiKey || prefs.openaiKeyEncrypted);
+    
+    if (isPrimaryOpenAI) {
+      try {
+        console.log('🟢 [SIMILAR_LINKS] Using OpenAI (Primary Provider)');
+        response = await callOpenAI(systemPrompt, userPrompt, 1000);
+        logTiming('[SIMILAR_LINKS] Success (OpenAI Primary)', startTime);
+      } catch (err) {
+        console.error('🔴 [SIMILAR_LINKS] OpenAI primary error:', err.message);
+        const fallbackPref = prefs.fallbackPreference || 'try-other';
+        if (fallbackPref === 'demo-only') {
+          console.log('[SIMILAR_LINKS] Fallback set to demo-only, using demo');
+          await simulateDelay();
+          return demoResponse('similarLinks', { pageTitle });
+        } else if (fallbackPref === 'fail') {
+          throw new Error('OpenAI API key is locked. Please unlock it in settings.');
+        }
+        // else fall through to Gemini Nano
+      }
+    }
+    
+    // Try Gemini Nano (LanguageModel)
+    if (!response && typeof LanguageModel !== 'undefined') {
+      const availability = await LanguageModel.availability();
+      console.log('🔗 [SIMILAR_LINKS] LanguageModel availability:', availability);
+      
+      if (availability === 'readily' || availability === 'available') {
+        try {
+          const session = await LanguageModel.create({
+            language: 'en',
+            temperature: 0.7,
+            topK: 40
+          });
+          const fullPrompt = systemPrompt + '\n\n' + userPrompt;
+          response = await session.prompt(fullPrompt);
+          session.destroy();
+          logTiming('[SIMILAR_LINKS] Success (Gemini Nano)', startTime);
+        } catch (err) {
+          console.error('🔴 [SIMILAR_LINKS] LanguageModel error:', err.message);
+        }
+      }
+    }
+    
+    // Try OpenAI fallback
+    if (!response && await shouldUseOpenAI()) {
+      try {
+        console.log('🟢 [SIMILAR_LINKS] Trying OpenAI fallback');
+        response = await callOpenAI(systemPrompt, userPrompt, 1000);
+        logTiming('[SIMILAR_LINKS] Success (OpenAI Fallback)', startTime);
+      } catch (err) {
+        console.error('🔴 [SIMILAR_LINKS] OpenAI fallback error:', err.message);
+      }
+    }
+    
+    // If still no response, use demo mode
+    if (!response) {
+      console.log('[SIMILAR_LINKS] Using demo mode');
+      await simulateDelay();
+      return demoResponse('similarLinks', { pageTitle });
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.error('🔴 [SIMILAR_LINKS] Error:', error);
     throw error;
   }
 }
