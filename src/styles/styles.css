@@ -1128,15 +1128,16 @@ body {
 
 .continue-conversation-btn {
   width: 100%;
-  padding: 12px 20px;
-  background: #507fb9;
-  color: #deeaf7;
-  border: 1px solid #080809;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4285f4 0%, #336fbe 100%);
+  color: white;
+  border: none;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 550;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1145,14 +1146,17 @@ body {
 }
 
 .continue-conversation-btn:hover {
-  background: #67a0e0;
-  border-color: #4B5563;
+  background: linear-gradient(135deg, #5a95f5 0%, #2e82f0 100%);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.35);
+  transform: translateY(-1px);
 }
 
 .continue-conversation-btn:active {
-  background: #0e315b;
-  border-color: #374151;
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(66, 133, 244, 0.2);
 }
+
+
 
 /* Chat empty state */
 .chat-empty-state {
@@ -1822,7 +1826,7 @@ body {
 
 .generate-links-btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+  background: linear-gradient(135deg, #4285f4 0%, #336fbe 100%);
   color: white;
   border: none;
   border-radius: 8px;
