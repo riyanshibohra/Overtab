@@ -17,7 +17,6 @@ body {
 /* Popup */
 .popup-container {
   width: 340px;
-  min-height: 320px;
   background: #fafbfc;
   display: flex;
   flex-direction: column;
@@ -27,35 +26,35 @@ body {
 
 .popup-header {
   background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-  padding: 28px 20px 24px;
+  padding: 20px 20px 16px;
   text-align: center;
   position: relative;
   border-bottom: 1px solid #e8eaed;
 }
 
 .popup-icon {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 16px;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 8px;
   filter: drop-shadow(0 2px 8px rgba(66, 133, 244, 0.15));
   display: inline-block;
   object-fit: contain;
 }
 
 .popup-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
-  margin-bottom: 4px;
-  letter-spacing: -0.8px;
+  margin-bottom: 3px;
+  letter-spacing: -0.6px;
 }
 
 .popup-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: #5f6368;
   margin: 0;
   font-weight: 400;
@@ -65,8 +64,8 @@ body {
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px;
+  gap: 8px;
+  padding: 14px 16px;
   flex: 1;
 }
 
@@ -74,11 +73,11 @@ body {
 .action-button {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 11px 14px;
   background: #ffffff;
   border: 1px solid #e8eaed;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: inherit;
@@ -152,7 +151,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 20px;
+  padding: 10px 16px;
   background: #ffffff;
   border-top: 1px solid #e8eaed;
   margin-top: auto;
@@ -1481,20 +1480,42 @@ body {
   margin-top: 6px;
 }
 
-.test-api-btn {
-  padding: 8px 16px;
-  background: #f1f3f4;
+.api-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.test-api-btn,
+.clear-api-btn {
+  flex: 1;
+  padding: 10px 16px;
   border: 1px solid #dadce0;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #202124;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
+.test-api-btn {
+  background: #f1f3f4;
+  color: #202124;
+}
+
 .test-api-btn:hover {
   background: #e8eaed;
+}
+
+.clear-api-btn {
+  background: #fef0f0;
+  color: #d93025;
+  border-color: #f8d7da;
+}
+
+.clear-api-btn:hover {
+  background: #fce8e6;
+  border-color: #d93025;
 }
 
 .api-test-result {

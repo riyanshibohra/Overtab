@@ -547,12 +547,52 @@ IMPORTANT:
     
     // Get AI response
     let response;
+    const prefs = await chrome.storage.local.get(['primaryProvider', 'fallbackPreference', 'openaiApiKey', 'openaiModel', 'openaiTemperature']);
+    const isPrimaryOpenAI = prefs.primaryProvider === 'openai' && prefs.openaiApiKey;
     
-    if (chatSession) {
-      // Use persistent session
-      response = await chatSession.prompt(message);
-    } else if (typeof LanguageModel !== 'undefined') {
-      // Try creating a new Gemini Nano session
+    // Try OpenAI first if it's the primary provider
+    if (isPrimaryOpenAI && !response) {
+      try {
+        console.log('💬 [CHAT] Using OpenAI (Primary Provider)');
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${prefs.openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: prefs.openaiModel || 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...chatHistory.slice(-10).map(h => ({ role: h.role, content: h.text })),
+              { role: 'user', content: message }
+            ],
+            temperature: prefs.openaiTemperature || 0.8,
+            max_tokens: 500
+          })
+        });
+        
+        if (openaiResponse.ok) {
+          const data = await openaiResponse.json();
+          response = data.choices[0].message.content;
+        } else {
+          console.error('OpenAI primary failed, trying Gemini Nano');
+        }
+      } catch (err) {
+        console.error('OpenAI primary error:', err);
+      }
+    }
+    
+    // Try Gemini Nano if not using OpenAI primary or if primary failed
+    if (!response && chatSession) {
+      try {
+        response = await chatSession.prompt(message);
+      } catch (err) {
+        console.error('Chat session error:', err);
+      }
+    }
+    
+    if (!response && typeof LanguageModel !== 'undefined') {
       try {
         const availability = await LanguageModel.availability();
         if (availability === 'readily' || availability === 'available') {
@@ -563,53 +603,46 @@ IMPORTANT:
           });
           response = await tempSession.prompt(fullPrompt);
           tempSession.destroy();
-        } else {
-          throw new Error('Language model not available');
         }
       } catch (err) {
-        console.log('Gemini Nano failed, trying OpenAI fallback');
-        // Fall through to OpenAI
+        console.log('Gemini Nano failed:', err);
       }
     }
     
-    // Try OpenAI fallback if Gemini Nano is not available
-    if (!response) {
+    // Try OpenAI as fallback if Gemini Nano failed and fallback is allowed
+    if (!response && !isPrimaryOpenAI && prefs.fallbackPreference === 'try-other' && prefs.openaiApiKey) {
       try {
-        const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature']);
-        
-        if (!settings.openaiApiKey) {
-          throw new Error('No AI available. Please configure OpenAI API in settings.');
-        }
-        
+        console.log('💬 [CHAT] Using OpenAI (Fallback Provider)');
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.openaiApiKey}`
+            'Authorization': `Bearer ${prefs.openaiApiKey}`
           },
           body: JSON.stringify({
-            model: settings.openaiModel || 'gpt-4o-mini',
+            model: prefs.openaiModel || 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               ...chatHistory.slice(-10).map(h => ({ role: h.role, content: h.text })),
               { role: 'user', content: message }
             ],
-            temperature: settings.openaiTemperature || 0.8,
+            temperature: prefs.openaiTemperature || 0.8,
             max_tokens: 500
           })
         });
         
-        if (!openaiResponse.ok) {
-          const error = await openaiResponse.json();
-          throw new Error(error.error?.message || 'OpenAI API error');
+        if (openaiResponse.ok) {
+          const data = await openaiResponse.json();
+          response = data.choices[0].message.content;
         }
-        
-        const data = await openaiResponse.json();
-        response = data.choices[0].message.content;
       } catch (err) {
-        console.error('OpenAI error:', err);
-        throw new Error(err.message || 'No AI available');
+        console.error('OpenAI fallback error:', err);
       }
+    }
+    
+    // If still no response, throw error
+    if (!response) {
+      throw new Error('No AI available. Please configure OpenAI API in settings or enable Gemini Nano.');
     }
     
     // Remove loading indicator and add real response

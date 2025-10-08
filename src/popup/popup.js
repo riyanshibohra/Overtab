@@ -107,6 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const closeSettingsBtn = document.getElementById('close-settings');
   const saveSettingsBtn = document.getElementById('save-settings');
   const testApiBtn = document.getElementById('test-api-key');
+  const clearApiBtn = document.getElementById('clear-api-key');
   
   const apiKeyInput = document.getElementById('openai-api-key');
   const modelSelect = document.getElementById('openai-model');
@@ -114,6 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const tempValue = document.getElementById('temp-value');
   const geminiStatus = document.getElementById('gemini-status');
   const apiTestResult = document.getElementById('api-test-result');
+  const fallbackPreference = document.getElementById('fallback-preference');
+  const primaryProvider = document.getElementById('primary-provider');
 
   // Open settings
   settingsBtn.addEventListener('click', async function() {
@@ -141,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Load settings
   async function loadSettings() {
-    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature']);
+    const settings = await chrome.storage.local.get(['openaiApiKey', 'openaiModel', 'openaiTemperature', 'fallbackPreference', 'primaryProvider']);
     
     if (settings.openaiApiKey) {
       apiKeyInput.value = settings.openaiApiKey;
@@ -155,6 +158,14 @@ document.addEventListener('DOMContentLoaded', function() {
       temperatureSlider.value = settings.openaiTemperature;
       tempValue.textContent = settings.openaiTemperature;
     }
+
+    if (settings.fallbackPreference) {
+      fallbackPreference.value = settings.fallbackPreference;
+    }
+
+    if (settings.primaryProvider) {
+      primaryProvider.value = settings.primaryProvider;
+    }
   }
 
   // Save settings
@@ -162,11 +173,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const apiKey = apiKeyInput.value.trim();
     const model = modelSelect.value;
     const temperature = parseFloat(temperatureSlider.value);
+    const fallback = fallbackPreference.value;
+    const primary = primaryProvider.value;
     
     await chrome.storage.local.set({
       openaiApiKey: apiKey,
       openaiModel: model,
-      openaiTemperature: temperature
+      openaiTemperature: temperature,
+      fallbackPreference: fallback,
+      primaryProvider: primary
     });
     
     // Show success message
@@ -175,6 +190,20 @@ document.addEventListener('DOMContentLoaded', function() {
       saveSettingsBtn.textContent = 'Save Settings';
       settingsModal.classList.add('hidden');
     }, 1000);
+  });
+
+  // Clear API key
+  clearApiBtn.addEventListener('click', async function() {
+    if (confirm('Are you sure you want to clear your API key? This cannot be undone.')) {
+      apiKeyInput.value = '';
+      await chrome.storage.local.remove('openaiApiKey');
+      apiTestResult.textContent = '✓ API key cleared';
+      apiTestResult.className = 'api-test-result success';
+      
+      setTimeout(() => {
+        apiTestResult.textContent = '';
+      }, 3000);
+    }
   });
 
   // Test API key

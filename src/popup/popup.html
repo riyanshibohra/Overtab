@@ -93,11 +93,42 @@
         
         <!-- AI Provider Section -->
         <div class="settings-section">
-          <h3>AI Provider</h3>
-          <p class="settings-description">Configure your AI backend</p>
+          <h3>AI Provider Status</h3>
+          <p class="settings-description">Current availability of AI providers</p>
           
           <div class="ai-status-info">
             <span id="gemini-status">🔍 Checking Gemini Nano availability...</span>
+          </div>
+        </div>
+
+        <!-- Primary AI Provider Section -->
+        <div class="settings-section">
+          <h3>Primary AI Provider</h3>
+          <p class="settings-description">Choose which AI to use first</p>
+          
+          <div class="input-group">
+            <label for="primary-provider">Preferred Provider</label>
+            <select id="primary-provider" class="settings-select">
+              <option value="gemini-nano">Gemini Nano (On-Device, Private)</option>
+              <option value="openai">OpenAI API (Cloud, Requires Key)</option>
+            </select>
+            <span class="input-hint">💡 Your preferred AI will be tried first when available</span>
+          </div>
+        </div>
+
+        <!-- Fallback Preference Section -->
+        <div class="settings-section">
+          <h3>Fallback Behavior</h3>
+          <p class="settings-description">What to do when primary provider fails or is unavailable</p>
+          
+          <div class="input-group">
+            <label for="fallback-preference">Fallback Strategy</label>
+            <select id="fallback-preference" class="settings-select">
+              <option value="try-other">Try Other Provider, then Demo Mode</option>
+              <option value="demo-only">Demo Mode Only (No other AI)</option>
+              <option value="fail">Show Error (No Fallback)</option>
+            </select>
+            <span class="input-hint">💡 "Try Other Provider" will use the non-primary AI as backup</span>
           </div>
         </div>
 
@@ -140,7 +171,10 @@
             <span class="input-hint">Lower = More focused, Higher = More creative</span>
           </div>
 
-          <button id="test-api-key" class="test-api-btn">Test API Key</button>
+          <div class="api-actions">
+            <button id="test-api-key" class="test-api-btn">Test API Key</button>
+            <button id="clear-api-key" class="clear-api-btn">Clear API Key</button>
+          </div>
           <span id="api-test-result" class="api-test-result"></span>
         </div>
 
