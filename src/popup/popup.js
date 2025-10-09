@@ -63,7 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
       window.close();
       
     } catch (error) {
-      console.error('Error explaining page:', error);
       alert('Error: ' + error.message);
     }
   });
@@ -85,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
     } catch (error) {
-      console.error('Error starting voice command:', error);
       alert('Error: ' + error.message);
     }
   });
@@ -103,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       window.close();
     } catch (error) {
-      console.error('Error opening history:', error);
+      // Silent fail
     }
   });
 
@@ -237,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!geminiAvailable || !primary) {
         primary = 'openai';
         primaryProvider.value = 'openai';
-        console.log('✅ Auto-selected OpenAI as primary provider');
       }
     }
     
@@ -394,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
         geminiAvailable = (availability === 'readily' || availability === 'available');
       }
     } catch (e) {
-      console.error('Error checking Gemini:', e);
+      // Gemini check failed
     }
 
     if (geminiAvailable) {
