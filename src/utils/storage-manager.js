@@ -25,12 +25,10 @@ async function saveToHistory(sourceText, resultType, result) {
     }
     
     await chrome.storage.local.set({ history: history });
-    
-    console.log('Saved to history:', historyItem);
     return historyItem;
     
   } catch (error) {
-    console.error('Error saving to history:', error);
+    // Silent fail
   }
 }
 
@@ -39,7 +37,6 @@ async function getHistory() {
     const data = await chrome.storage.local.get(['history']);
     return data.history || [];
   } catch (error) {
-    console.error('Error getting history:', error);
     return [];
   }
 }
@@ -47,9 +44,8 @@ async function getHistory() {
 async function clearHistory() {
   try {
     await chrome.storage.local.set({ history: [] });
-    console.log('History cleared');
   } catch (error) {
-    console.error('Error clearing history:', error);
+    // Silent fail
   }
 }
 
@@ -58,7 +54,6 @@ async function getHistoryItem(id) {
     const history = await getHistory();
     return history.find(item => item.id === id);
   } catch (error) {
-    console.error('Error getting history item:', error);
     return null;
   }
 }
