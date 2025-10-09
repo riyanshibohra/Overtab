@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const availability = await LanguageModel.availability();
         
         if (availability === 'readily' || availability === 'available') {
-          geminiStatus.textContent = '✓ Gemini Nano is available and ready';
+          geminiStatus.textContent = '✓ Gemini Nano is available!';
           geminiStatus.style.color = '#0f9d58';
           isGeminiAvailable = true;
           
