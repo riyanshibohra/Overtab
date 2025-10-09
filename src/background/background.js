@@ -59,7 +59,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         })
         .catch(err => {
-          console.error('Error opening sidebar:', err);
           sendResponse({ success: false, error: err.message });
         });
       return true;
@@ -69,7 +68,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           chrome.sidePanel.open({ tabId: tabs[0].id })
             .then(() => sendResponse({ success: true }))
             .catch(err => {
-              console.error('Error opening sidebar:', err);
               sendResponse({ success: false, error: err.message });
             });
         } else {
@@ -109,7 +107,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         
         sendResponse({ success: true, result });
       } catch (error) {
-        console.error('[Background] AI processing error:', error);
         sendResponse({ success: false, error: error.message });
       }
     })();
