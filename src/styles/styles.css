@@ -81,7 +81,11 @@ body.loaded .popup-container {
 .welcome-message {
   margin: 0;
   padding: 0;
-  background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+  /* Layered background: subtle radial lights over soft gradient */
+  background:
+    radial-gradient(1200px 600px at 110% -10%, rgba(26, 115, 232, 0.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(66, 133, 244, 0.10), transparent 55%),
+    linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
   border-radius: 0;
   border: none;
   text-align: center;
@@ -97,6 +101,40 @@ body.loaded .popup-container {
   bottom: 0;
   overflow: hidden;
   z-index: 100;
+  isolation: isolate; /* ensures blobs layer behind content */
+}
+
+/* Floating gradient blobs for a more delightful look */
+.welcome-message::before,
+.welcome-message::after {
+  content: '';
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: -1;
+  animation: floatBlob 14s ease-in-out infinite;
+}
+
+.welcome-message::before {
+  top: -120px;
+  left: -120px;
+  background: radial-gradient(circle at 30% 30%, rgba(66, 133, 244, 0.55), rgba(26, 115, 232, 0.15));
+}
+
+.welcome-message::after {
+  bottom: -140px;
+  right: -140px;
+  background: radial-gradient(circle at 70% 70%, rgba(52, 168, 83, 0.45), rgba(66, 133, 244, 0.15));
+  animation-delay: 3s;
+}
+
+@keyframes floatBlob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8px, -10px) scale(1.05); }
 }
 
 @keyframes fadeInUp {
@@ -116,6 +154,12 @@ body.loaded .popup-container {
   width: 100%;
   max-width: 300px;
   margin: 0 auto;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(26, 115, 232, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(10px) saturate(1.05);
+  box-shadow: 0 12px 40px rgba(26, 115, 232, 0.16), 0 4px 14px rgba(0, 0, 0, 0.06);
+  position: relative;
 }
 
 .welcome-logo {
@@ -250,12 +294,17 @@ body.loaded .popup-container {
   font-size: 12px;
   color: #80868b;
   margin: 0;
-  font-weight: 400;
-  display: flex;
+  font-weight: 500;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   letter-spacing: 0.2px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .welcome-hint::before {
