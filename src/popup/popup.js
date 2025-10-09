@@ -413,14 +413,14 @@ document.addEventListener('DOMContentLoaded', function() {
       statusLabel.style.color = '#1976d2';
     } else {
       // First-time user / no providers configured
-      statusIcon.src = '';
-      statusIcon.alt = '';
-      statusIcon.style.display = 'none';
+      statusIcon.src = '../../icons/settings-icon.svg';
+      statusIcon.alt = 'Settings';
+
       statusText.textContent = 'Ready to get started?';
-      statusLabel.textContent = '';
-      statusLabel.style.background = 'transparent';
+      statusLabel.textContent = 'CLICK TO SETUP';
+      statusLabel.style.background = '#e3f2fd';
       statusLabel.style.color = 'inherit';
-      statusLabel.style.display = 'none';
+      statusLabel.style.display = 'block';
     }
   }
 

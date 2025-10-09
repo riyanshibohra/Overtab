@@ -240,7 +240,10 @@ async function explainText(text) {
       if (availability === 'readily' || availability === 'available') {
         try {
           const session = await LanguageModel.create({
-            language: 'en'
+            language: 'en',
+            // Explicitly attest output language to satisfy newer Chrome requirements
+            outputLanguage: 'en',
+            output: { language: 'en' }
           });
           const prompt = `Explain the following text clearly and concisely. Start with a brief 1-sentence summary, then provide 3-5 key points as bullet points:
 
@@ -355,7 +358,9 @@ async function simplifyText(text) {
       if (availability === 'readily' || availability === 'available') {
         try {
           const session = await LanguageModel.create({
-            language: 'en'
+            language: 'en',
+            outputLanguage: 'en',
+            output: { language: 'en' }
           });
           const prompt = `Simplify the following text into very simple, easy-to-understand language. Use basic words that a 10-year-old would understand. Break down complex concepts into clear, short sentences. Avoid jargon and technical terms.
 
@@ -646,6 +651,8 @@ async function promptAI(prompt) {
         try {
           const session = await LanguageModel.create({
             language: 'en',
+            outputLanguage: 'en',
+            output: { language: 'en' },
             temperature: 0.7,
             topK: 40
           });
@@ -706,7 +713,7 @@ IMPORTANT RULES:
 3. Include variety: articles, documentation, tools, communities, tutorials
 4. Each recommendation must include:
    - Title: Clear, descriptive title
-   - URL: Full, valid URL (must start with https://)
+   - URL: Full, fully qualified valid URL (must start with https://)
    - Description: 1-2 sentence description of what the resource offers
 5. Format EXACTLY as: TITLE|||URL|||DESCRIPTION (separated by |||)
 6. NO numbered lists, NO markdown, JUST the formatted entries
@@ -760,6 +767,8 @@ Recommend valuable resources including official documentation, tutorials, tools,
         try {
           const session = await LanguageModel.create({
             language: 'en',
+            outputLanguage: 'en',
+            output: { language: 'en' },
             temperature: 0.7,
             topK: 40
           });

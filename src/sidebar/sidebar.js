@@ -532,6 +532,9 @@ async function initializeChat() {
         if (availability === 'readily' || availability === 'available') {
           chatSession = await LanguageModel.create({
             language: 'en',
+            // Explicit output language per Chrome requirement
+            outputLanguage: 'en',
+            output: { language: 'en' },
             temperature: 0.8,
             topK: 40
           });
@@ -696,6 +699,8 @@ RESPONSE STYLE:
         if (availability === 'readily' || availability === 'available') {
           const tempSession = await LanguageModel.create({
             language: 'en',
+            outputLanguage: 'en',
+            output: { language: 'en' },
             temperature: 0.8,
             topK: 40
           });
