@@ -309,8 +309,14 @@ function formatAIResult(text) {
     const isBullet = line.startsWith('* ') || line.startsWith('- ') || line.startsWith('• ');
     const isNumbered = /^\d+\.\s/.test(line);
     
-    // Convert **bold** to <strong> in the line
-    let processed = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // Strip markdown emphasis markers so highlighted text appears as regular text
+    // Handles **bold**, __bold__, *italic*, _italic_, and `code`
+    let processed = line
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/`([^`]+)`/g, '$1');
     
     // Handle list items
     if (isBullet) {
@@ -949,13 +955,20 @@ async function generateSimilarLinksForPage(customTopic = '') {
     }
     
     // Parse the response
-    const links = parseSimilarLinksResponse(aiResponse);
+    let links = parseSimilarLinksResponse(aiResponse);
     
     if (links.length === 0) {
       throw new Error('Could not parse links from response. Please try again with a different topic.');
     }
     
-    // Display the links
+    // Verify links asynchronously (HTTP HEAD/GET with timeout & normalization)
+    links = await verifyAndNormalizeLinks(links);
+    
+    if (links.length === 0) {
+      throw new Error('All generated links failed verification. Please try again or refine your topic.');
+    }
+    
+    // Display the verified links
     displaySimilarLinks(links, pageTitle);
     
   } catch (error) {
@@ -1009,6 +1022,132 @@ function parseSimilarLinksResponse(response) {
   
   console.log('🔗 Total links parsed:', links.length);
   return links;
+}
+
+// Normalize and verify URLs to reduce 404/invalid links
+async function verifyAndNormalizeLinks(links) {
+  const timeoutMs = 8000; // per-link timeout
+  const maxConcurrent = 5;
+  
+  function normalizeUrl(url) {
+    try {
+      const u = new URL(url.trim());
+      // Force https where possible
+      if (u.protocol === 'http:') u.protocol = 'https:';
+      // Remove tracking params
+      const trackingParams = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id','gclid','fbclid','igshid'];
+      trackingParams.forEach(p => u.searchParams.delete(p));
+      // Strip trailing slashes and fragments
+      u.hash = '';
+      // Normalize path (no multiple slashes)
+      u.pathname = u.pathname.replace(/\/+$/,'/');
+      return u.toString();
+    } catch (_) {
+      return url;
+    }
+  }
+  
+  function repairUrlCandidate(url) {
+    // Remove surrounding punctuation that models sometimes include
+    const cleaned = url.trim().replace(/[\)\]\.,'";]+$/g, '');
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    // If missing scheme, assume https
+    return 'https://' + cleaned.replace(/^\/*/, '');
+  }
+  
+  async function checkUrl(url) {
+    const start = Date.now();
+    const initial = normalizeUrl(repairUrlCandidate(url));
+    
+    const fetchWithTimeout = async (input) => {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        const res = await fetch(input, {
+          method: 'GET',
+          redirect: 'follow',
+          cache: 'no-store',
+          credentials: 'omit',
+          signal: ctrl.signal
+        });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
+    };
+    
+    const tryVariants = async (baseUrl) => {
+      const variants = [baseUrl];
+      try {
+        const u = new URL(baseUrl);
+        const endsWithSlash = u.pathname.endsWith('/');
+        if (!endsWithSlash) variants.push(u.toString() + '/');
+        if (endsWithSlash) variants.push(u.toString().replace(/\/+$/, ''));
+      } catch (_) {}
+      
+      for (const candidate of variants) {
+        try {
+          const res = await fetchWithTimeout(candidate);
+          const finalUrl = res.url || candidate;
+          let ok = res.ok && res.status < 400;
+          // Some servers return 200 with a 404 page; inspect content quickly
+          if (ok) {
+            const text = (await res.text()).slice(0, 5000).toLowerCase();
+            const errorPats = [
+              '404', 'page not found', 'we can\'t find your page', 'not found',
+              'does not exist', 'cannot be found', 'page you are looking for can\'t be found'
+            ];
+            if (errorPats.some(p => text.includes(p))) {
+              ok = false;
+            }
+          }
+          if (ok) return normalizeUrl(finalUrl);
+        } catch (e) {
+          // try next variant
+        }
+      }
+      return null;
+    };
+    
+    const verified = await tryVariants(initial);
+    const elapsed = Date.now() - start;
+    console.log('🔎 Verified URL in', elapsed, 'ms ->', verified || initial);
+    return verified;
+  }
+  
+  const results = [];
+  let index = 0;
+  async function worker() {
+    while (index < links.length) {
+      const i = index++;
+      const link = links[i];
+      const checked = await checkUrl(link.url);
+      if (checked) {
+        results.push({ ...link, url: checked });
+      }
+    }
+  }
+  
+  const workers = Array.from({ length: Math.min(maxConcurrent, links.length) }, () => worker());
+  await Promise.all(workers);
+  
+  // Deduplicate by hostname+path
+  const seen = new Set();
+  const deduped = [];
+  for (const l of results) {
+    try {
+      const u = new URL(l.url);
+      const key = u.hostname + u.pathname;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduped.push(l);
+      }
+    } catch (_) {
+      deduped.push(l);
+    }
+  }
+  
+  return deduped;
 }
 
 function showLinksLoadingState() {
