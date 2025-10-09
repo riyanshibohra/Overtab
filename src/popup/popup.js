@@ -614,11 +614,18 @@ async function checkWelcomeAndUnlockStatus() {
     
     // Show welcome message if first time AND no provider configured
     if (!hasSeenWelcome && !hasPrimaryProvider) {
-      // Show fullscreen welcome overlay (it covers everything with absolute positioning)
+      // Ensure welcome overlay is visible immediately to avoid flash
       welcomeMessage.classList.remove('hidden');
       
       // Mark as seen after showing
       chrome.storage.local.set({ hasSeenWelcome: true });
+    } else {
+      // Not first time or provider set — hide welcome overlay and show popup UI
+      const welcomeMessageEl = document.getElementById('welcome-message');
+      if (welcomeMessageEl) {
+        welcomeMessageEl.classList.add('hidden');
+      }
+      document.body.classList.add('ready');
     }
     
     // Check if OpenAI key is locked (encrypted but not in session)
