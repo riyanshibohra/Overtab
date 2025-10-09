@@ -1,12 +1,6 @@
 // Overtab Background Service Worker
-// Handles context menus, sidebar management, and inter-component communication
-
-// Import AI helper for processing AI requests
 importScripts('../utils/ai-helper.js');
 
-console.log('Overtab service worker initialized');
-
-// Create context menu for image descriptions and open popup on install
 chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: 'describe-image',
@@ -17,7 +11,6 @@ chrome.runtime.onInstalled.addListener((details) => {
   // Open popup automatically on first install
   if (details.reason === 'install') {
     chrome.action.openPopup().catch(() => {
-      // If popup can't be opened programmatically, open in a new window
       chrome.windows.create({
         url: chrome.runtime.getURL('src/popup/popup.html'),
         type: 'popup',
@@ -28,10 +21,8 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
-// Handle context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'describe-image') {
-    // Set pending action BEFORE opening sidebar
     chrome.storage.session.set({ pendingAction: 'describe' }, () => {
       chrome.sidePanel.open({ tabId: tab.id });
       
@@ -51,11 +42,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-// Handle messages between components
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  
   if (message.action === 'openSidebar') {
-    // Use sender's tab if available, otherwise get active tab
     if (sender.tab && sender.tab.id) {
       chrome.sidePanel.open({ tabId: sender.tab.id })
         .then(() => {
@@ -92,7 +80,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
   
-  // Handle AI processing requests (from content scripts that don't have storage access)
+  // Handle AI processing requests from content scripts
   if (message.action === 'processAI') {
     (async () => {
       try {
@@ -125,10 +113,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       }
     })();
-    return true; // Keep channel open for async response
+    return true;
   }
   
-  // Forward result messages to sidebar
+  // Forward messages to sidebar
   if (message.action === 'showLoading' || 
       message.action === 'showResult' || 
       message.action === 'showError') {
