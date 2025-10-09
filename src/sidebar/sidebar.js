@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         const loadingVisible = !document.getElementById('loading-state').classList.contains('hidden');
         if (loadingVisible) {
-          console.warn('⚠️ Loading timeout');
           showError('Request timed out. Please try again.');
         }
       }, 30000);
@@ -72,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
               topicInput.value = tab.title;
             }
           } catch (err) {
-            console.log('Could not get current tab title:', err);
+            // Could not get tab title
           }
         }
       }
@@ -171,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
           event.target.textContent = '📋';
         }, 1000);
       }).catch(err => {
-        console.error('Copy failed:', err);
         showToast('❌ Copy failed');
       });
     }
@@ -278,16 +276,6 @@ function showResultDisplay() {
   document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('result-display').classList.remove('hidden');
-}
-
-function showEmptyState() {
-  document.getElementById('empty-state').classList.remove('hidden');
-  document.getElementById('loading-state').classList.add('hidden');
-  document.getElementById('result-display').classList.add('hidden');
-}
-
-function clearCurrentResult() {
-  showEmptyState();
 }
 
 async function clearHistoryStorage() {
@@ -515,8 +503,6 @@ function switchToTab(tabName) {
 }
 
 async function initializeChat() {
-  console.log('💬 Initializing chat with context:', chatContext);
-  
   // Show chat interface
   document.getElementById('chat-empty-state').classList.add('hidden');
   document.getElementById('chat-messages-container').classList.remove('hidden');
@@ -544,13 +530,10 @@ async function initializeChat() {
             temperature: 0.8,
             topK: 40
           });
-          console.log('✅ Gemini Nano chat session created');
         }
-      } else if (isPrimaryOpenAI) {
-        console.log('✅ Using OpenAI for chat (no session needed)');
       }
     } catch (error) {
-      console.error('Error creating chat session:', error);
+      // Chat session creation failed
     }
   }
   
@@ -637,12 +620,9 @@ RESPONSE STYLE:
         const session = await chrome.storage.session.get(['encryptionPasscode']);
         if (session.encryptionPasscode) {
           openaiApiKey = await decryptTextWithPasscode(prefs.openaiKeyEncrypted, session.encryptionPasscode);
-          console.log('💬 [CHAT] Successfully decrypted OpenAI API key');
-        } else {
-          console.warn('💬 [CHAT] OpenAI key is locked - passcode not available');
         }
       } catch (err) {
-        console.error('💬 [CHAT] Error decrypting OpenAI key:', err);
+        // Decryption failed
       }
     }
     
@@ -659,7 +639,6 @@ RESPONSE STYLE:
     // Try OpenAI first if it's the primary provider
     if (isPrimaryOpenAI && !response && openaiApiKey) {
       try {
-        console.log('💬 [CHAT] Using OpenAI (Primary Provider)');
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -681,21 +660,18 @@ RESPONSE STYLE:
         if (openaiResponse.ok) {
           const data = await openaiResponse.json();
           response = data.choices[0].message.content;
-        } else {
-          console.error('OpenAI primary failed, trying Gemini Nano');
         }
       } catch (err) {
-        console.error('OpenAI primary error:', err);
+        // OpenAI primary failed
       }
     }
     
     // Try Gemini Nano if not using OpenAI primary or if primary failed
     if (!response && chatSession) {
       try {
-        // IMPORTANT: Use fullPrompt (with context + history) instead of just message
         response = await chatSession.prompt(fullPrompt);
       } catch (err) {
-        console.error('Chat session error:', err);
+        // Chat session failed
       }
     }
     
@@ -714,14 +690,13 @@ RESPONSE STYLE:
           tempSession.destroy();
         }
       } catch (err) {
-        console.log('Gemini Nano failed:', err);
+        // Gemini Nano failed
       }
     }
     
     // Try OpenAI as fallback if Gemini Nano failed and fallback is allowed
     if (!response && !isPrimaryOpenAI && prefs.fallbackPreference === 'try-other' && openaiApiKey) {
       try {
-        console.log('💬 [CHAT] Using OpenAI (Fallback Provider)');
         const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -745,7 +720,7 @@ RESPONSE STYLE:
           response = data.choices[0].message.content;
         }
       } catch (err) {
-        console.error('OpenAI fallback error:', err);
+        // OpenAI fallback failed
       }
     }
     
@@ -763,7 +738,6 @@ RESPONSE STYLE:
     chatHistory.push({ role: 'assistant', text: response });
     
   } catch (error) {
-    console.error('Chat error:', error);
     removeMessage(loadingId);
     addMessageToChat('assistant', '❌ Sorry, I encountered an error. Please try again or start a new conversation.');
   } finally {
@@ -845,7 +819,7 @@ function resetChat() {
     try {
       chatSession.destroy();
     } catch (e) {
-      console.log('Session already destroyed');
+      // Session already destroyed
     }
     chatSession = null;
   }
@@ -908,7 +882,6 @@ async function generateSimilarLinksForPage(customTopic = '') {
       pageTitle = customTopic;
       pageDescription = '';
       pageUrl = '';
-      console.log('🔗 Generating links for custom topic:', customTopic);
     } else {
       // Otherwise, get current tab info
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -932,11 +905,8 @@ async function generateSimilarLinksForPage(customTopic = '') {
         });
         pageDescription = result?.result || '';
       } catch (err) {
-        console.log('Could not extract page description:', err);
         pageDescription = '';
       }
-      
-      console.log('🔗 Generating links for page:', { pageTitle, pageDescription, pageUrl });
     }
     
     // Validate we have a topic
@@ -946,8 +916,6 @@ async function generateSimilarLinksForPage(customTopic = '') {
     
     // Generate similar links using AI (function from ai-helper.js)
     const aiResponse = await generateSimilarLinks(pageTitle, pageDescription, pageUrl);
-    
-    console.log('🔗 AI Response:', aiResponse);
     
     // Validate AI response
     if (!aiResponse || aiResponse.trim() === '') {
@@ -972,7 +940,6 @@ async function generateSimilarLinksForPage(customTopic = '') {
     displaySimilarLinks(links, pageTitle);
     
   } catch (error) {
-    console.error('Error generating similar links:', error);
     showLinksError(error.message || 'Failed to generate links. Please try again.');
   }
 }
@@ -980,8 +947,6 @@ async function generateSimilarLinksForPage(customTopic = '') {
 function parseSimilarLinksResponse(response) {
   const links = [];
   const lines = response.split('\n').filter(line => line.trim().length > 0);
-  
-  console.log('🔗 Parsing response, found', lines.length, 'lines');
   
   for (const line of lines) {
     // Skip demo mode prefix if present
@@ -994,12 +959,8 @@ function parseSimilarLinksResponse(response) {
       const url = parts[1].trim();
       const description = parts[2].trim();
       
-      // Validate URL - be more lenient
       if (title && url && (url.startsWith('http://') || url.startsWith('https://'))) {
         links.push({ title, url, description });
-        console.log('✅ Parsed link:', title);
-      } else {
-        console.log('❌ Invalid link format:', line.substring(0, 50));
       }
     } else {
       // Try to parse markdown-style links or other formats
@@ -1012,15 +973,11 @@ function parseSimilarLinksResponse(response) {
         
         if (url.startsWith('http://') || url.startsWith('https://')) {
           links.push({ title, url, description });
-          console.log('✅ Parsed markdown link:', title);
         }
-      } else {
-        console.log('⚠️ Could not parse line:', line.substring(0, 50));
       }
     }
   }
   
-  console.log('🔗 Total links parsed:', links.length);
   return links;
 }
 
@@ -1110,8 +1067,6 @@ async function verifyAndNormalizeLinks(links) {
     };
     
     const verified = await tryVariants(initial);
-    const elapsed = Date.now() - start;
-    console.log('🔎 Verified URL in', elapsed, 'ms ->', verified || initial);
     return verified;
   }
   
