@@ -715,9 +715,11 @@ IMPORTANT RULES:
    - Title: Clear, descriptive title
    - URL: Full, fully qualified valid URL (must start with https://)
    - Description: 1-2 sentence description of what the resource offers
-5. Format EXACTLY as: TITLE|||URL|||DESCRIPTION (separated by |||)
-6. NO numbered lists, NO markdown, JUST the formatted entries
-7. One entry per line`;
+5. Prefer stable, canonical URLs (avoid tracking params, session IDs, redirects)
+6. If suggesting GitHub repos, use the repo root URL; for docs, use the canonical docs URL
+7. Format EXACTLY as: TITLE|||URL|||DESCRIPTION (separated by |||)
+8. NO numbered lists, NO markdown, JUST the formatted entries
+9. One entry per line`;
 
     const userPrompt = pageUrl 
       ? `Find 7-10 similar resources related to this webpage:
