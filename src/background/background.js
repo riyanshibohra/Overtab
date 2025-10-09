@@ -6,13 +6,26 @@ importScripts('../utils/ai-helper.js');
 
 console.log('Overtab service worker initialized');
 
-// Create context menu for image descriptions
-chrome.runtime.onInstalled.addListener(() => {
+// Create context menu for image descriptions and open popup on install
+chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: 'describe-image',
     title: 'Describe with Overtab',
     contexts: ['image']
   });
+  
+  // Open popup automatically on first install
+  if (details.reason === 'install') {
+    chrome.action.openPopup().catch(() => {
+      // If popup can't be opened programmatically, open in a new window
+      chrome.windows.create({
+        url: chrome.runtime.getURL('src/popup/popup.html'),
+        type: 'popup',
+        width: 400,
+        height: 600
+      });
+    });
+  }
 });
 
 // Handle context menu clicks

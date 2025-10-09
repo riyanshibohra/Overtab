@@ -6,6 +6,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const voiceCommandBtn = document.getElementById('voice-command-btn');
   const historyBtn = document.getElementById('history-btn');
   const tooltipToggle = document.getElementById('tooltip-toggle');
+  
+  // Mark body as loaded immediately to prevent flash
+  document.body.classList.add('loaded');
+  
+  // Check for first-time install and unlock status
+  checkWelcomeAndUnlockStatus();
 
   // Load tooltip state without flicker
   chrome.storage.local.get(['tooltipEnabled'], (result) => {
@@ -407,12 +413,14 @@ document.addEventListener('DOMContentLoaded', function() {
       statusLabel.style.color = '#1976d2';
     } else {
       // First-time user / no providers configured
-      statusIcon.src = '../../icons/settings-icon.svg';
-      statusIcon.alt = 'Setup';
-      statusText.textContent = 'Configure AI in Settings';
-      statusLabel.textContent = 'CLICK';
-      statusLabel.style.background = '#fff3e0';
-      statusLabel.style.color = '#e65100';
+      statusIcon.src = '';
+      statusIcon.alt = '';
+      statusIcon.style.display = 'none';
+      statusText.textContent = 'Ready to get started?';
+      statusLabel.textContent = '';
+      statusLabel.style.background = 'transparent';
+      statusLabel.style.color = 'inherit';
+      statusLabel.style.display = 'none';
     }
   }
 
@@ -592,4 +600,77 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
 });
+
+// Check for first-time welcome and unlock status
+async function checkWelcomeAndUnlockStatus() {
+  const welcomeMessage = document.getElementById('welcome-message');
+  const welcomeSetupBtn = document.getElementById('welcome-setup-btn');
   
+  // Check if this is first time opening the extension
+  chrome.storage.local.get(['hasSeenWelcome', 'primaryProvider', 'openaiApiKey', 'openaiKeyEncrypted', 'hasSeenLockNotification'], async (result) => {
+    const hasSeenWelcome = result.hasSeenWelcome || false;
+    const hasPrimaryProvider = result.primaryProvider || false;
+    const hasSeenLockNotification = result.hasSeenLockNotification || false;
+    
+    // Show welcome message if first time AND no provider configured
+    if (!hasSeenWelcome && !hasPrimaryProvider) {
+      // Show fullscreen welcome overlay (it covers everything with absolute positioning)
+      welcomeMessage.classList.remove('hidden');
+      
+      // Mark as seen after showing
+      chrome.storage.local.set({ hasSeenWelcome: true });
+    }
+    
+    // Check if OpenAI key is locked (encrypted but not in session)
+    if (result.primaryProvider === 'openai' && result.openaiKeyEncrypted && !result.openaiApiKey) {
+      // Check if passcode is in session
+      const session = await chrome.storage.session.get(['encryptionPasscode', 'shownLockAlert']);
+      
+      // Show alert only once per session
+      if (!session.encryptionPasscode && !session.shownLockAlert) {
+        // Small delay to let UI render
+        setTimeout(() => {
+          const shouldUnlock = confirm('🔒 Your OpenAI API key is locked.\n\nWould you like to unlock it now?');
+          
+          if (shouldUnlock) {
+            // Open the unlock modal directly
+            const unlockModal = document.getElementById('unlock-modal');
+            if (unlockModal) {
+              unlockModal.classList.remove('hidden');
+              // Focus the passcode input
+              const passcodeInput = document.getElementById('unlock-passcode-input');
+              if (passcodeInput) {
+                setTimeout(() => passcodeInput.focus(), 100);
+              }
+            }
+          }
+          
+          // Mark as shown for this session
+          chrome.storage.session.set({ shownLockAlert: true });
+        }, 300);
+      }
+    }
+  });
+  
+  // Welcome setup button - opens settings
+  if (welcomeSetupBtn) {
+    welcomeSetupBtn.addEventListener('click', function() {
+      // Hide welcome overlay
+      welcomeMessage.classList.add('hidden');
+      
+      // Open settings modal
+      const settingsModal = document.getElementById('settings-modal');
+      if (settingsModal) {
+        settingsModal.classList.remove('hidden');
+        // Trigger settings load if function exists
+        if (typeof loadSettings === 'function') {
+          loadSettings();
+        }
+        if (typeof checkGeminiStatus === 'function') {
+          checkGeminiStatus();
+        }
+      }
+    });
+  }
+  
+}
