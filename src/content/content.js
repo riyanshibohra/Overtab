@@ -1,12 +1,9 @@
 // Overtab Content Script
-// Handles text selection, tooltips, voice commands, and image interactions
-
 let tooltip = null;
 let currentSelectedText = '';
 let isProcessing = false;
 let tooltipEnabled = true;
 
-// Safely access storage
 try {
   chrome.storage.local.get(['tooltipEnabled']).then((result) => {
     tooltipEnabled = result.tooltipEnabled !== false;
@@ -17,7 +14,6 @@ try {
   tooltipEnabled = true;
 }
 
-// Detect text selection
 document.addEventListener('mouseup', function(event) {
   setTimeout(() => {
     if (!tooltipEnabled) return;
@@ -39,21 +35,18 @@ document.addEventListener('mouseup', function(event) {
   }, 10);
 });
 
-// Remove tooltip on click outside
 document.addEventListener('mousedown', function(event) {
   if (tooltip && !tooltip.contains(event.target)) {
     removeTooltip();
   }
 });
 
-// Close tooltip with ESC key
 document.addEventListener('keydown', function(event) {
   if (event.key === 'Escape' && tooltip) {
     removeTooltip();
   }
 });
 
-// Create and show tooltip
 function showTooltip(selectionRect) {
   if (tooltip) return;
   
@@ -91,7 +84,6 @@ function showTooltip(selectionRect) {
   
   document.body.appendChild(tooltip);
   
-  // Position relative to selected text
   const tooltipRect = tooltip.getBoundingClientRect();
   let left = selectionRect.left + (selectionRect.width / 2) - (tooltipRect.width / 2);
   let top = selectionRect.top - tooltipRect.height - 10;
@@ -106,7 +98,6 @@ function showTooltip(selectionRect) {
   tooltip.style.left = left + 'px';
   tooltip.style.top = top + 'px';
   
-  // Event listeners for Explain and Simplify buttons
   tooltip.querySelectorAll('.overtab-tooltip-btn:not(.translate-main-btn)').forEach(button => {
     button.addEventListener('click', function() {
       const action = this.getAttribute('data-action');
@@ -114,7 +105,6 @@ function showTooltip(selectionRect) {
     });
   });
   
-  // Translate dropdown toggle
   const translateBtn = tooltip.querySelector('.translate-main-btn');
   const langMenu = tooltip.querySelector('.translate-lang-menu');
   
@@ -125,7 +115,6 @@ function showTooltip(selectionRect) {
       langMenu.style.display = isVisible ? 'none' : 'block';
     });
     
-    // Language option click
     tooltip.querySelectorAll('.lang-option').forEach(option => {
       option.addEventListener('click', function(e) {
         e.stopPropagation();
@@ -143,7 +132,6 @@ function removeTooltip() {
   tooltip = null;
 }
 
-// Handle tooltip button clicks
 async function handleAction(action, language = null) {
   if (isProcessing) return;
   
@@ -152,16 +140,14 @@ async function handleAction(action, language = null) {
   
   removeTooltip();
   
-  // Set pending action so sidebar shows loading immediately
   try {
     chrome.storage.session.set({ pendingAction: action });
   } catch (e) {
-    console.log('⚠️ Storage access limited, sidebar will show default loading');
+    // Storage access limited
   }
   
   chrome.runtime.sendMessage({ action: 'openSidebar' });
   
-  // Small delay to ensure sidebar is ready
   setTimeout(() => {
     chrome.runtime.sendMessage({ action: 'showLoading', actionType: action, sourceText: text });
   }, 100);
@@ -206,7 +192,6 @@ async function handleAction(action, language = null) {
         throw new Error(response.error || 'AI processing failed');
       }
     } else if (action === 'translate') {
-      // Use selected language or default to Spanish
       const targetLang = language || 'es';
       
       const response = await chrome.runtime.sendMessage({
@@ -249,7 +234,6 @@ async function handleAction(action, language = null) {
     }
     
   } catch (error) {
-    console.error(`Error in ${action}:`, error);
     chrome.runtime.sendMessage({
       action: 'showError',
       error: error.message || 'AI API not available.'
@@ -259,7 +243,6 @@ async function handleAction(action, language = null) {
   }
 }
 
-// Image hover detection
 let hoveredImage = null;
 
 document.addEventListener('mouseover', function(event) {
@@ -278,16 +261,14 @@ document.addEventListener('mouseout', function(event) {
   }
 });
 
-// Ensure we capture the exact image the user right-clicked
+// Capture the exact image the user right-clicked
 document.addEventListener('contextmenu', function(event) {
   if (event.target && event.target.tagName === 'IMG') {
     hoveredImage = event.target;
   }
 }, true);
 
-// Listen for messages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  
   if (message.action === 'showAlert') {
     alert(message.message);
   }
@@ -310,18 +291,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Handle "Explain Page" feature
 async function handleExplainPage(pageText) {
-  // Set pending action so sidebar shows loading immediately
   try {
     chrome.storage.session.set({ pendingAction: 'explain' });
   } catch (e) {
-    console.log('⚠️ Storage access limited, sidebar will show default loading');
+    // Storage access limited
   }
   
   chrome.runtime.sendMessage({ action: 'openSidebar' });
   
-  // Small delay to ensure sidebar is ready
   setTimeout(() => {
     chrome.runtime.sendMessage({
       action: 'showLoading',
@@ -351,7 +329,6 @@ async function handleExplainPage(pageText) {
     });
     
   } catch (error) {
-    console.error('Error explaining page:', error);
     chrome.runtime.sendMessage({
       action: 'showError',
       error: error.message || 'AI API not available.'
@@ -359,7 +336,6 @@ async function handleExplainPage(pageText) {
   }
 }
 
-// Voice command capture
 function startVoiceCapture() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert('Voice recognition not supported.');
@@ -435,7 +411,6 @@ Answer the question based on the page content above.`;
       });
       
     } catch (error) {
-      console.error('Error processing voice question:', error);
       chrome.runtime.sendMessage({
         action: 'showError',
         error: error.message || 'Error processing voice question. Try again!'
@@ -444,7 +419,6 @@ Answer the question based on the page content above.`;
   };
   
   recognition.onerror = function(event) {
-    console.error('Voice recognition error:', event.error);
     if (indicator && indicator.parentNode) {
       indicator.parentNode.removeChild(indicator);
     }
@@ -460,29 +434,28 @@ Answer the question based on the page content above.`;
   try {
     recognition.start();
   } catch (error) {
-    console.error('Error starting voice recognition:', error);
     if (indicator && indicator.parentNode) {
       indicator.parentNode.removeChild(indicator);
     }
   }
 }
 
-// Find best-matching <img> element for a given URL (handles srcset/currentSrc)
+// Find best-matching image element for a given URL (handles srcset/currentSrc)
 function findImageElementByUrl(targetUrl) {
   try {
-    // Prefer the currently hovered <img> if it matches or if no URL provided
     if (hoveredImage) {
       const hSrc = hoveredImage.currentSrc || hoveredImage.src || '';
       if (!targetUrl || hSrc === targetUrl) return hoveredImage;
     }
     const allImages = Array.from(document.images);
     const normalizedTarget = decodeURI(targetUrl);
-    // Prefer exact currentSrc match, then src, then suffix match
+    
     const exactCurrent = allImages.find(img => decodeURI(img.currentSrc || '') === normalizedTarget);
     if (exactCurrent) return exactCurrent;
+    
     const exactSrc = allImages.find(img => decodeURI(img.src || '') === normalizedTarget);
     if (exactSrc) return exactSrc;
-    // Fallback: match on filename/suffix
+    
     const suffixMatch = allImages.find(img =>
       (img.currentSrc && normalizedTarget.endsWith(decodeURI(new URL(img.currentSrc, location.href).pathname))) ||
       (img.src && normalizedTarget.endsWith(decodeURI(new URL(img.src, location.href).pathname)))
@@ -493,39 +466,40 @@ function findImageElementByUrl(targetUrl) {
   }
 }
 
-// Collect captions/labels around the image to avoid hallucinations
+// Collect captions and context around the image
 function collectImageContext(imgEl, imageUrl) {
   if (!imgEl) return { alt: '', title: '', ariaLabel: '', caption: '', describedBy: '', nearby: '', linkLabel: '', heading: '', fileNameHint: '', metaOgAlt: '' };
+  
   const getText = el => (el ? (el.innerText || el.textContent || '').trim() : '');
   const alt = (imgEl.getAttribute('alt') || '').trim();
   const title = (imgEl.getAttribute('title') || '').trim();
   const ariaLabel = (imgEl.getAttribute('aria-label') || '').trim();
   const longdesc = (imgEl.getAttribute('longdesc') || '').trim();
 
-  // figcaption within a <figure>
   let caption = '';
   const figure = imgEl.closest('figure');
   if (figure) {
     const fc = figure.querySelector('figcaption');
     caption = getText(fc);
   }
-  // Common site-specific caption containers (Wikipedia, news sites, galleries)
+  
   if (!caption) {
     const wikiThumb = imgEl.closest('div.thumb');
     if (wikiThumb) {
       caption = getText(wikiThumb.querySelector('.thumbcaption')) || caption;
     }
   }
+  
   if (!caption) {
     const galleryText = imgEl.closest('.gallery') || imgEl.closest('.gallerybox');
     if (galleryText) caption = getText(galleryText.querySelector('.gallerytext')) || caption;
   }
+  
   if (!caption) {
     const mediaCaption = imgEl.closest('[class*="caption"],[data-caption]');
     caption = (mediaCaption && (getText(mediaCaption.querySelector('[class*="caption"]')) || mediaCaption.getAttribute('data-caption'))) || caption;
   }
 
-  // aria-describedby points to caption-like text
   let describedBy = '';
   const describedId = imgEl.getAttribute('aria-describedby');
   if (describedId) {
@@ -533,7 +507,6 @@ function collectImageContext(imgEl, imageUrl) {
     describedBy = getText(descEl);
   }
 
-  // Nearby paragraph text (same container)
   let nearby = '';
   const container = imgEl.closest('figure, .image, .img, .thumb, .gallery, .photo, article, section, div');
   if (container) {
@@ -541,19 +514,16 @@ function collectImageContext(imgEl, imageUrl) {
     nearby = getText(p);
   }
 
-  // Anchor/link context
   let linkLabel = '';
   const a = imgEl.closest('a');
   if (a) {
     linkLabel = (a.getAttribute('title') || a.getAttribute('aria-label') || getText(a)).trim();
   }
 
-  // Nearest heading in ancestors
   let heading = '';
   const headingEl = imgEl.closest('section, article, div, main, body')?.querySelector('h1, h2, h3, h4');
   heading = getText(headingEl);
 
-  // File name hint from URL
   let fileNameHint = '';
   try {
     const u = new URL(imageUrl, location.href);
@@ -565,7 +535,6 @@ function collectImageContext(imgEl, imageUrl) {
     fileNameHint = base;
   } catch (_) {}
 
-  // Meta Open Graph alt
   let metaOgAlt = '';
   const ogAlt = document.querySelector('meta[property="og:image:alt"], meta[name="og:image:alt"]');
   if (ogAlt && ogAlt.getAttribute('content')) metaOgAlt = ogAlt.getAttribute('content').trim();
@@ -573,7 +542,7 @@ function collectImageContext(imgEl, imageUrl) {
   return { alt, title, ariaLabel, caption, describedBy, nearby, linkLabel, heading, fileNameHint, metaOgAlt, longdesc };
 }
 
-// Handle image description (context-driven, no vision)
+// Handle image description using page context
 async function handleDescribeImage(imageUrl) {
   try {
     const imgEl = findImageElementByUrl(imageUrl);
@@ -582,7 +551,6 @@ async function handleDescribeImage(imageUrl) {
     const fields = [ctx.caption, ctx.alt, ctx.ariaLabel, ctx.title, ctx.describedBy, ctx.nearby, ctx.linkLabel, ctx.heading, ctx.metaOgAlt, ctx.fileNameHint, ctx.longdesc];
     const hasContext = fields.some(v => (v || '').replace(/[\s_\-.,:;|/\\]/g, '').length >= 4);
 
-    // If truly no context, short-circuit without prompting
     if (!hasContext) {
       chrome.runtime.sendMessage({
         action: 'showResult',
@@ -593,7 +561,6 @@ async function handleDescribeImage(imageUrl) {
       return;
     }
 
-    // Synthesize context intelligently
     const parts = [];
     if (ctx.caption) parts.push(ctx.caption);
     else if (ctx.alt) parts.push(ctx.alt);
@@ -629,7 +596,6 @@ Write the description now:`;
     }
     
     let result = response.result;
-    // Clean up the result
     result = result
       .split('\n')
       .filter(l => {
@@ -655,7 +621,6 @@ Write the description now:`;
     });
     
   } catch (error) {
-    console.error('Error describing image:', error);
     chrome.runtime.sendMessage({
       action: 'showError',
       error: error.message || 'Error describing image'
