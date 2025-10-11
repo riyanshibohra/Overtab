@@ -297,11 +297,10 @@ function formatAIResult(text) {
     const isBullet = line.startsWith('* ') || line.startsWith('- ') || line.startsWith('• ');
     const isNumbered = /^\d+\.\s/.test(line);
     
-    // Strip markdown emphasis markers so highlighted text appears as regular text
-    // Handles **bold**, __bold__, *italic*, _italic_, and `code`
+    // Convert **bold** to <strong> for yellow highlighting
     let processed = line
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_]+)__/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '$1')
       .replace(/_([^_]+)_/g, '$1')
       .replace(/`([^`]+)`/g, '$1');
