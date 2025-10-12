@@ -55,6 +55,10 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const pageText = results[0].result;
       
+      await chrome.sidePanel.open({ tabId: tab.id });
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       await chrome.tabs.sendMessage(tab.id, {
         action: 'explainPage',
         text: pageText
