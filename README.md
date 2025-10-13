@@ -2,14 +2,18 @@
 
 AI-powered browsing assistant for Chrome. Built for the Google Chrome Built-in AI Challenge 2025.
 
-Watch the full demo on YouTube:
-[![Watch the demo](https://img.youtube.com/vi/Wq5pnpnK9r0/maxresdefault.jpg)](https://www.youtube.com/watch?v=Wq5pnpnK9r0)
+**Status:** Currently under review on Chrome Web Store (As an extension)
+
+<p>Watch the full demo on YouTube:</p>
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=Wq5pnpnK9r0">
+    <img src="https://img.youtube.com/vi/Wq5pnpnK9r0/maxresdefault.jpg" width="600" alt="Watch the demo on YouTube"/>
+  </a>
+</p>
 
 Configure your OpenAI API (Fallback):
 
 https://github.com/user-attachments/assets/9ada0501-9fd4-4168-abad-256c4635ce96
-
-**Status:** Currently under review on Chrome Web Store (As an extension)
 
 ## Installation (Developer Mode)
 
