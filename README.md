@@ -2,6 +2,8 @@
 
 AI-powered browsing assistant for Chrome. Built for the Google Chrome Built-in AI Challenge 2025.
 
+[▶ Watch the Demo on YouTube](https://www.youtube.com/watch?v=Wq5pnpnK9r0)
+
 **Status:** Currently under review on Chrome Web Store (As an extension)
 
 ## Installation (Developer Mode)
