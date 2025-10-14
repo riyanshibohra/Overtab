@@ -8,7 +8,7 @@
 [![Gemini Nano](https://img.shields.io/badge/Gemini%20Nano-Powered-4285F4?logo=google&logoColor=white)](https://developer.chrome.com/docs/ai/built-in)
 [![Google AI Challenge 2025](https://img.shields.io/badge/Google%20AI%20Challenge-2025-FF6B6B?logo=google&logoColor=white)](https://developers.google.com/community/chrome-ai-dev-challenge)
 
-**Private. On-Device. Insightful.**
+**Private. On-Device. Fast. Insightful.**
 
 </div>
 
