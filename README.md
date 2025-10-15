@@ -10,6 +10,10 @@
 
 **Private. On-Device. Fast. Insightful.**
 
+<p align="center">
+  <strong>→ <a href="https://chromewebstore.google.com/detail/overtab/oloejollcmhnbacdkfgbdlgcgbeegcje">Install Overtab on the Chrome Web Store</a></strong>
+</p>
+
 </div>
 
 ---
